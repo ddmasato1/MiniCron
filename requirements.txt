@@ -1,0 +1,8 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+apscheduler>=3.10.4
+croniter>=2.0.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+python-multipart>=0.0.9
+aiosqlite>=0.20.0

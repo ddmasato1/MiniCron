@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniCron - 轻量定时任务管理控制台</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    [v-cloak] { display: none; }
+    .term-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .term-scroll::-webkit-scrollbar-track { background: #1e1e2e; }
+    .term-scroll::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
+  <div id="app" v-cloak class="min-h-screen flex flex-col">
+
+    <!-- 登录屏 -->
+    <div v-if="!isAuthenticated" class="flex-1 flex items-center justify-center p-4">
+      <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-3 border border-indigo-500/30">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2"/>
+              <polyline points="12 6 12 12 16 14" stroke-width="2"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight text-white">MiniCron</h1>
+          <p class="text-sm text-slate-400 mt-1">轻量级 Python 任务调度与管理面板</p>
+        </div>
+        
+        <form @submit.prevent="login" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">管理密码</label>
+            <input 
+              v-model="loginPassword" 
+              type="password" 
+              placeholder="请输入 ADMIN_PASSWORD" 
+              required
+              class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition"
+            />
+          </div>
+          <p v-if="loginError" class="text-xs text-rose-400 font-medium">{{ loginError }}</p>
+          <button 
+            type="submit" 
+            :disabled="loginLoading"
+            class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl text-sm transition flex items-center justify-center shadow-lg shadow-indigo-600/20"
+          >
+            <span v-if="!loginLoading">进入控制台</span>
+            <span v-else class="flex items-center gap-2">
+              <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+              验证中...
+            </span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 授权后的主操作台 -->
+    <div v-else class="flex-1 flex flex-col">
+      <!-- 顶部导航栏 -->
+      <header class="bg-slate-800/80 border-b border-slate-700/60 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2"/>
+              <polyline points="12 6 12 12 16 14" stroke-width="2"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-base text-white tracking-wide flex items-center gap-2">
+              MiniCron
+              <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Running</span>
+            </h1>
+            <p class="text-xs text-slate-400">零注入风险 · 轻量定时中心</p>
+          </div>
+        </div>
+
+        <!-- 系统状态指标 -->
+        <div class="hidden md:flex items-center gap-4 text-xs font-mono text-slate-300">
+          <div class="flex items-center gap-1.5 bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 rounded-lg">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            <span>内存: <b>{{ sysStatus.memory_usage_mb || '--' }} MB</b></span>
+          </div>
+          <div class="flex items-center gap-1.5 bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 rounded-lg">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>时间: <b>{{ sysStatus.server_time || '--' }}</b></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 脚本管理按钮 -->
+          <button 
+            @click="openScriptModal('list')" 
+            class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg transition flex items-center gap-1.5"
+            title="管理 scripts 目录脚本（查看/粘贴/上传）"
+          >
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            <span>脚本管理 ({{ scriptsList.length }})</span>
+          </button>
+          <button 
+            @click="logout" 
+            class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 px-3 py-2 rounded-lg transition flex items-center gap-1"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            <span>退出</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 主体内容 -->
+      <main class="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6">
+        
+        <!-- 操作与汇总条 -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
+          <div class="flex items-center gap-4 text-sm">
+            <div>
+              <span class="text-slate-400">任务总数:</span>
+              <span class="font-bold text-white ml-1.5 text-base">{{ tasks.length }}</span>
+            </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <div>
+              <span class="text-slate-400">已启用:</span>
+              <span class="font-bold text-emerald-400 ml-1.5 text-base">{{ tasks.filter(t => t.enabled).length }}</span>
+            </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <div>
+              <span class="text-slate-400">正在运行:</span>
+              <span class="font-bold text-indigo-400 ml-1.5 text-base">{{ tasks.filter(t => t.is_running).length }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2.5 w-full sm:w-auto">
+            <button 
+              @click="fetchTasks" 
+              class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 p-2.5 rounded-xl transition text-xs flex items-center gap-1"
+              title="刷新列表"
+            >
+              <svg class="w-4 h-4" :class="{'animate-spin': isRefreshing}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+            <button 
+              @click="openScriptModal('paste')" 
+              class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 font-medium px-3.5 py-2.5 rounded-xl text-sm transition flex items-center gap-1.5"
+              title="在线粘贴或上传 Python 脚本"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>上传/粘贴脚本</span>
+            </button>
+            <button 
+              @click="openCreateModal" 
+              class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span>新建定时任务</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 任务列表 -->
+        <div v-if="tasks.length === 0" class="text-center py-16 bg-slate-800/30 rounded-2xl border border-dashed border-slate-700">
+          <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 mx-auto flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-300">暂无任何定时任务</h3>
+          <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">可以直接在页面上“上传/粘贴脚本”，然后点击上方“新建定时任务”即可完成调度配置。</p>
+          <div class="mt-4 flex items-center justify-center gap-3">
+            <button @click="openScriptModal('paste')" class="text-xs font-semibold bg-slate-800 text-indigo-300 hover:bg-slate-700 px-3.5 py-2 rounded-lg border border-slate-700 transition">粘贴/上传脚本</button>
+            <button @click="openCreateModal" class="text-xs font-semibold bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-3.5 py-2 rounded-lg border border-indigo-500/30 transition">创建定时任务</button>
+          </div>
+        </div>
+
+        <div v-else class="grid grid-cols-1 gap-4">
+          <div 
+            v-for="task in tasks" 
+            :key="task.id" 
+            class="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-5 hover:border-slate-600 transition shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5"
+          >
+            <!-- 任务核心信息 -->
+            <div class="space-y-2 flex-1">
+              <div class="flex items-center gap-3">
+                <h3 class="text-base font-bold text-white">{{ task.name }}</h3>
+                <!-- 状态徽标 -->
+                <span 
+                  v-if="task.is_running" 
+                  class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30 animate-pulse"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 运行中...
+                </span>
+                <span 
+                  v-else-if="task.latest_execution"
+                  class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono border"
+                  :class="task.latest_execution.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'"
+                >
+                  <span>{{ task.latest_execution.status === 'SUCCESS' ? '上次成功' : '上次失败' }}</span>
+                  <span v-if="task.latest_execution.duration_seconds">({{ task.latest_execution.duration_seconds }}s)</span>
+                </span>
+              </div>
+
+              <!-- 细节指标 -->
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
+                <span class="flex items-center gap-1 text-slate-300">
+                  <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                  {{ task.script_path }}
+                </span>
+                <span class="flex items-center gap-1 bg-slate-900/60 px-2 py-0.5 rounded border border-slate-700/50 text-indigo-300 font-bold">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><polyline points="12 6 12 12 16 14" stroke-width="2"/></svg>
+                  {{ task.cron_expression }}
+                </span>
+                <span v-if="task.enabled && task.next_run_time" class="text-slate-400">
+                  下次运行: <span class="text-slate-300">{{ task.next_run_time }}</span>
+                </span>
+                <span v-else-if="!task.enabled" class="text-slate-500 italic">已暂停调度</span>
+              </div>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-700/60">
+              <!-- 启停开关 -->
+              <button 
+                @click="toggleTask(task)"
+                :class="task.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-700/40 text-slate-400 border-slate-700'"
+                class="px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition"
+                :title="task.enabled ? '点击暂停' : '点击启用'"
+              >
+                {{ task.enabled ? '已启用' : '已暂停' }}
+              </button>
+
+              <!-- 手动立即运行 -->
+              <button 
+                @click="runTaskNow(task)" 
+                :disabled="task.is_running"
+                class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 disabled:opacity-40 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1"
+                title="立即手动触发一次"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" stroke-width="2" fill="currentColor"/></svg>
+                <span>立即运行</span>
+              </button>
+
+              <!-- 查看日志 -->
+              <button 
+                @click="viewTaskLogs(task)" 
+                class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1"
+                title="查看执行历史与完整日志"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>日志</span>
+              </button>
+
+              <!-- 编辑 -->
+              <button 
+                @click="openEditModal(task)" 
+                class="bg-slate-700/50 hover:bg-slate-600 text-slate-300 p-2 rounded-xl transition"
+                title="编辑任务"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              </button>
+
+              <!-- 删除 -->
+              <button 
+                @click="deleteTask(task)" 
+                class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 p-2 rounded-xl transition"
+                title="删除任务"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- 任务编辑 / 新增模态框 -->
+      <div v-if="showTaskModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+            <h3 class="text-lg font-bold text-white">{{ isEditing ? '编辑定时任务' : '新建定时任务' }}</h3>
+            <button @click="showTaskModal = false" class="text-slate-400 hover:text-white">&times;</button>
+          </div>
+
+          <form @submit.prevent="saveTask" class="space-y-4">
+            <!-- 任务名称 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">任务名称</label>
+              <input 
+                v-model="currentForm.name" 
+                type="text" 
+                placeholder="如: 掘金每日签到" 
+                required 
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <!-- 选择脚本 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs font-semibold text-slate-300">目标脚本 (位于 scripts/ 目录)</label>
+                <button 
+                  type="button" 
+                  @click="openScriptModal('paste')" 
+                  class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  <span>粘贴/上传新脚本</span>
+                </button>
+              </div>
+              <select 
+                v-model="currentForm.script_path" 
+                required 
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+              >
+                <option value="" disabled>请选择 Python 脚本</option>
+                <option v-for="s in scriptsList" :key="s.relative_path" :value="s.relative_path">
+                  {{ s.relative_path }} ({{ (s.file_size/1024).toFixed(1) }} KB)
+                </option>
+              </select>
+            </div>
+
+            <!-- Cron 表达式与预演 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs font-semibold text-slate-300">Crontab 表达式 (分 时 日 月 周)</label>
+                <div class="flex gap-1">
+                  <button type="button" @click="currentForm.cron_expression = '0 8 * * *'; onCronChange()" class="text-[10px] text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">每日 08:00</button>
+                  <button type="button" @click="currentForm.cron_expression = '0 */2 * * *'; onCronChange()" class="text-[10px] text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">每2小时</button>
+                </div>
+              </div>
+              <input 
+                v-model="currentForm.cron_expression" 
+                @input="onCronChange"
+                type="text" 
+                placeholder="如: 0 8 * * *" 
+                required 
+                class="w-full font-mono bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+              />
+              
+              <!-- 预计下次执行时间预览 -->
+              <div class="mt-2 bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-xs font-mono">
+                <div class="text-slate-400 mb-1 flex items-center justify-between">
+                  <span>未来 5 次触发预演:</span>
+                  <span v-if="cronPreviewValid === false" class="text-rose-400">格式错误</span>
+                  <span v-else-if="cronPreviewValid === true" class="text-emerald-400">格式合法</span>
+                </div>
+                <ul v-if="cronPreviewRuns.length" class="space-y-0.5 text-slate-300">
+                  <li v-for="(run, idx) in cronPreviewRuns" :key="idx" class="flex items-center gap-2">
+                    <span class="text-slate-500">#{{ idx + 1 }}</span>
+                    <span>{{ run }}</span>
+                  </li>
+                </ul>
+                <div v-else class="text-slate-600">输入合法的 Cron 表达式以查看触发时间</div>
+              </div>
+            </div>
+
+            <!-- 超时限制 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">最长超时限制 (秒)</label>
+              <input 
+                v-model.number="currentForm.timeout_seconds" 
+                type="number" 
+                min="10" 
+                max="86400" 
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <!-- 环境变量配置 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs font-semibold text-slate-300">自定义环境变量 (可选)</label>
+                <button type="button" @click="addEnvRow" class="text-[10px] text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">+ 添加变量</button>
+              </div>
+              <div class="space-y-2 max-h-32 overflow-y-auto">
+                <div v-for="(item, idx) in envRows" :key="idx" class="flex items-center gap-2">
+                  <input v-model="item.key" type="text" placeholder="KEY (如 PUSH_KEY)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white outline-none font-mono"/>
+                  <input v-model="item.value" type="text" placeholder="VALUE" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white outline-none font-mono"/>
+                  <button type="button" @click="removeEnvRow(idx)" class="text-rose-400 hover:text-rose-300 text-sm px-1">&times;</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700">
+              <button type="button" @click="showTaskModal = false" class="text-xs text-slate-300 hover:text-white px-4 py-2">取消</button>
+              <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-5 py-2 rounded-xl transition">保存任务</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 日志抽屉 / 弹窗 -->
+      <div v-if="showLogModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+          
+          <!-- 头部 -->
+          <div class="bg-slate-800/90 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-white text-sm">运行日志: {{ activeLogTask?.name }}</span>
+              <span v-if="isLogStreaming" class="flex items-center gap-1 text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full animate-pulse">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 实时流式捕获中
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="copyLogs" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg transition">复制日志</button>
+              <button @click="closeLogModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+          </div>
+
+          <!-- 主体：左侧历史列表，右侧日志终端 -->
+          <div class="flex-1 flex flex-col md:flex-row min-h-0">
+            <!-- 历史执行记录列表 -->
+            <div class="w-full md:w-64 bg-slate-950/60 border-r border-slate-800 p-3 overflow-y-auto term-scroll flex-shrink-0">
+              <div class="text-[11px] font-bold uppercase text-slate-500 mb-2 px-1">历史执行记录</div>
+              <div v-if="executionsList.length === 0" class="text-xs text-slate-600 p-2">暂无执行历史</div>
+              <div class="space-y-1">
+                <div 
+                  v-for="item in executionsList" 
+                  :key="item.id"
+                  @click="selectExecution(item)"
+                  :class="selectedExecutionId === item.id ? 'bg-indigo-600/20 border-indigo-500/40 text-white' : 'hover:bg-slate-800/60 text-slate-400 border-transparent'"
+                  class="p-2.5 rounded-xl border text-xs cursor-pointer transition flex flex-col gap-1 font-mono"
+                >
+                  <div class="flex items-center justify-between">
+                    <span :class="item.status === 'SUCCESS' ? 'text-emerald-400' : (item.status === 'RUNNING' ? 'text-amber-400' : 'text-rose-400')" class="font-bold">
+                      {{ item.status }}
+                    </span>
+                    <span class="text-[10px] text-slate-500">{{ item.trigger_type }}</span>
+                  </div>
+                  <div class="text-[11px] text-slate-400">{{ item.start_time.replace('T', ' ').slice(5, 19) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 终端展示区域 -->
+            <div class="flex-1 bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-y-auto term-scroll whitespace-pre-wrap select-text leading-relaxed">
+              <div v-if="currentLogContent">{{ currentLogContent }}</div>
+              <div v-else class="text-slate-600 italic">正在等待日志输出或暂无数据...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 脚本管理全功能模态框 (列表 / 粘贴 / 上传) -->
+      <div v-if="showScriptModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] flex flex-col">
+          
+          <!-- 弹窗顶栏 -->
+          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+            <div class="flex items-center gap-3">
+              <h3 class="text-base font-bold text-white">Scripts 目录脚本管理中心</h3>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">./scripts/*.py</span>
+            </div>
+            <button @click="showScriptModal = false" class="text-slate-400 hover:text-white text-xl">&times;</button>
+          </div>
+
+          <!-- 选项卡导航 -->
+          <div class="flex border-b border-slate-700/80 gap-2">
+            <button 
+              @click="scriptTab = 'list'"
+              :class="scriptTab === 'list' ? 'text-indigo-400 border-indigo-500 bg-indigo-950/30' : 'text-slate-400 border-transparent hover:text-slate-200'"
+              class="px-4 py-2 text-xs font-semibold border-b-2 rounded-t-lg transition flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+              <span>已有脚本列表 ({{ scriptsList.length }})</span>
+            </button>
+            <button 
+              @click="scriptTab = 'paste'"
+              :class="scriptTab === 'paste' ? 'text-indigo-400 border-indigo-500 bg-indigo-950/30' : 'text-slate-400 border-transparent hover:text-slate-200'"
+              class="px-4 py-2 text-xs font-semibold border-b-2 rounded-t-lg transition flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>📋 在线粘贴保存</span>
+            </button>
+            <button 
+              @click="scriptTab = 'upload'"
+              :class="scriptTab === 'upload' ? 'text-indigo-400 border-indigo-500 bg-indigo-950/30' : 'text-slate-400 border-transparent hover:text-slate-200'"
+              class="px-4 py-2 text-xs font-semibold border-b-2 rounded-t-lg transition flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              <span>📤 本地文件上传</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: 脚本列表 -->
+          <div v-if="scriptTab === 'list'" class="flex-1 overflow-y-auto space-y-2">
+            <div v-if="scriptsList.length === 0" class="text-center py-10 text-slate-500 text-xs">
+              scripts/ 目录下暂无脚本，请点击上方“在线粘贴保存”或“本地文件上传”。
+            </div>
+            <div 
+              v-for="s in scriptsList" 
+              :key="s.relative_path" 
+              class="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between font-mono text-xs hover:border-slate-600 transition"
+            >
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-white font-bold">{{ s.relative_path }}</span>
+                <span class="text-slate-500">({{ (s.file_size/1024).toFixed(1) }} KB)</span>
+                <span class="text-slate-500 hidden sm:inline">{{ s.modified_at }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button 
+                  @click="viewScriptCode(s.relative_path)" 
+                  class="bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded-lg text-xs transition"
+                >
+                  查看代码
+                </button>
+                <button 
+                  @click="deleteScript(s.relative_path)" 
+                  class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-lg text-xs transition"
+                  title="删除该脚本"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: 在线粘贴保存 -->
+          <div v-if="scriptTab === 'paste'" class="flex-1 flex flex-col space-y-3 min-h-0">
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">脚本文件名 (*.py)</label>
+                <input 
+                  v-model="pasteForm.filename" 
+                  type="text" 
+                  placeholder="如: checkin_bilibili.py (未加.py会自动补全)" 
+                  class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div class="pt-5 flex items-center gap-1.5">
+                <input type="checkbox" id="pasteOverwrite" v-model="pasteForm.overwrite" class="rounded bg-slate-900 border-slate-700 text-indigo-600"/>
+                <label for="pasteOverwrite" class="text-xs text-slate-400 cursor-pointer select-none">若存在则覆盖</label>
+              </div>
+            </div>
+
+            <div class="flex-1 flex flex-col min-h-0">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">脚本内容 (直接在此粘贴 Python 源码)</label>
+              <textarea 
+                v-model="pasteForm.content" 
+                placeholder="#!/usr/bin/env python3&#10;# 在此粘贴完整的 Python 代码...&#10;print('Hello MiniCron')" 
+                class="w-full h-64 bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-emerald-400 font-mono focus:border-indigo-500 outline-none resize-none term-scroll"
+              ></textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+              <span class="text-xs text-slate-500">保存后自动保存至宿主机 scripts/ 目录并立即可在任务中选取</span>
+              <button 
+                @click="submitPasteScript" 
+                :disabled="isSavingScript"
+                class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-xs px-5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                <span>{{ isSavingScript ? '正在保存...' : '保存脚本文件' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 3: 本地文件上传 -->
+          <div v-if="scriptTab === 'upload'" class="flex-1 flex flex-col justify-center space-y-4 py-4">
+            <div 
+              class="border-2 border-dashed border-slate-700 hover:border-indigo-500/60 rounded-2xl p-8 text-center bg-slate-950/40 transition cursor-pointer flex flex-col items-center justify-center"
+              @click="$refs.fileInput.click()"
+            >
+              <input 
+                ref="fileInput" 
+                type="file" 
+                accept=".py" 
+                @change="handleFileSelected" 
+                class="hidden" 
+              />
+              <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-400 flex items-center justify-center mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              </div>
+              <p class="text-sm font-semibold text-white">点击选择或拖拽 Python 脚本到这里</p>
+              <p class="text-xs text-slate-500 mt-1">仅支持单个 .py 文件上传，自动保存至 scripts 目录</p>
+              <div v-if="selectedFile" class="mt-4 inline-flex items-center gap-2 bg-indigo-950/60 border border-indigo-700/40 px-3 py-1.5 rounded-xl text-xs font-mono text-indigo-300">
+                <span>📄 {{ selectedFile.name }} ({{ (selectedFile.size/1024).toFixed(1) }} KB)</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <input type="checkbox" id="uploadOverwrite" v-model="uploadOverwrite" class="rounded bg-slate-900 border-slate-700 text-indigo-600"/>
+                <label for="uploadOverwrite" class="text-xs text-slate-400 cursor-pointer select-none">若同名则覆盖已有文件</label>
+              </div>
+              <button 
+                @click="submitUploadScript" 
+                :disabled="!selectedFile || isUploadingScript"
+                class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-medium text-xs px-5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                <span>{{ isUploadingScript ? '正在上传...' : '确认上传并保存' }}</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 脚本代码在线查看抽屉 -->
+      <div v-if="showCodeViewer" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+          <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-400">查看脚本:</span>
+              <span class="font-mono text-sm font-bold text-white">{{ viewingPath }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="copyCode(viewingCode)" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg transition">复制代码</button>
+              <button @click="showCodeViewer = false" class="text-slate-400 hover:text-white text-xl">&times;</button>
+            </div>
+          </div>
+          <div class="flex-1 p-4 bg-slate-950 font-mono text-xs text-slate-200 overflow-y-auto term-scroll whitespace-pre select-text leading-relaxed">
+            {{ viewingCode }}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Vue 3 核心逻辑 -->
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const isAuthenticated = ref(false);
+        const loginPassword = ref("");
+        const loginLoading = ref(false);
+        const loginError = ref("");
+        
+        const tasks = ref([]);
+        const scriptsList = ref([]);
+        const sysStatus = ref({});
+        const isRefreshing = ref(false);
+
+        // 任务编辑/新建模态框
+        const showTaskModal = ref(false);
+        const isEditing = ref(false);
+        const currentForm = reactive({
+          id: null,
+          name: "",
+          script_path: "",
+          cron_expression: "0 8 * * *",
+          timeout_seconds: 300,
+          enabled: true
+        });
+        const envRows = ref([]);
+        const cronPreviewRuns = ref([]);
+        const cronPreviewValid = ref(null);
+
+        // 日志模态框
+        const showLogModal = ref(false);
+        const activeLogTask = ref(null);
+        const executionsList = ref([]);
+        const selectedExecutionId = ref("");
+        const currentLogContent = ref("");
+        const isLogStreaming = ref(false);
+        let sseSource = null;
+
+        // 脚本中心模态框
+        const showScriptModal = ref(false);
+        const scriptTab = ref("list"); // 'list' | 'paste' | 'upload'
+        const pasteForm = reactive({
+          filename: "",
+          content: "",
+          overwrite: false
+        });
+        const isSavingScript = ref(false);
+        const selectedFile = ref(null);
+        const uploadOverwrite = ref(false);
+        const isUploadingScript = ref(false);
+
+        // 代码查看器
+        const showCodeViewer = ref(false);
+        const viewingPath = ref("");
+        const viewingCode = ref("");
+
+        const getAuthHeaders = () => {
+          const token = localStorage.getItem("minicron_token");
+          return token ? { "Authorization": `Bearer ${token}` } : {};
+        };
+
+        const apiRequest = async (url, options = {}) => {
+          options.headers = {
+            ...options.headers,
+            ...getAuthHeaders(),
+            "Content-Type": "application/json"
+          };
+          const res = await fetch(url, options);
+          if (res.status === 401) {
+            isAuthenticated.value = false;
+            localStorage.removeItem("minicron_token");
+            throw new Error("会话已失效，请重新登录");
+          }
+          return res.json();
+        };
+
+        // 检查登录状态
+        const checkAuth = async () => {
+          try {
+            const data = await apiRequest("/api/auth/me");
+            if (data.code === 0) {
+              isAuthenticated.value = true;
+              loadInitialData();
+            }
+          } catch (e) {
+            isAuthenticated.value = false;
+          }
+        };
+
+        const login = async () => {
+          loginLoading.value = true;
+          loginError.value = "";
+          try {
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password: loginPassword.value })
+            });
+            const data = await res.json();
+            if (data.code === 0) {
+              localStorage.setItem("minicron_token", data.data.token);
+              isAuthenticated.value = true;
+              loadInitialData();
+            } else {
+              loginError.value = data.detail || data.message || "登录失败";
+            }
+          } catch (e) {
+            loginError.value = "网络错误，无法连接服务";
+          } finally {
+            loginLoading.value = false;
+          }
+        };
+
+        const logout = async () => {
+          await apiRequest("/api/auth/logout", { method: "POST" });
+          localStorage.removeItem("minicron_token");
+          isAuthenticated.value = false;
+        };
+
+        const loadInitialData = async () => {
+          await Promise.all([fetchTasks(), fetchScripts(), fetchSystemStatus()]);
+        };
+
+        const fetchTasks = async () => {
+          isRefreshing.value = true;
+          try {
+            const res = await apiRequest("/api/tasks");
+            if (res.code === 0) tasks.value = res.data;
+          } finally {
+            isRefreshing.value = false;
+          }
+        };
+
+        const fetchScripts = async () => {
+          const res = await apiRequest("/api/scripts");
+          if (res.code === 0) scriptsList.value = res.data;
+        };
+
+        const fetchSystemStatus = async () => {
+          const res = await apiRequest("/api/system/status");
+          if (res.code === 0) sysStatus.value = res.data;
+        };
+
+        // Cron 预演
+        let cronTimer = null;
+        const onCronChange = () => {
+          clearTimeout(cronTimer);
+          cronTimer = setTimeout(async () => {
+            if (!currentForm.cron_expression) return;
+            try {
+              const res = await apiRequest("/api/tools/cron-preview", {
+                method: "POST",
+                body: JSON.stringify({ cron_expression: currentForm.cron_expression })
+              });
+              if (res.data && res.data.is_valid) {
+                cronPreviewRuns.value = res.data.next_runs;
+                cronPreviewValid.value = true;
+              } else {
+                cronPreviewRuns.value = [];
+                cronPreviewValid.value = false;
+              }
+            } catch (e) {
+              cronPreviewValid.value = false;
+            }
+          }, 300);
+        };
+
+        // 任务表单
+        const openCreateModal = () => {
+          isEditing.value = false;
+          currentForm.id = null;
+          currentForm.name = "";
+          currentForm.script_path = scriptsList.value[0]?.relative_path || "";
+          currentForm.cron_expression = "0 8 * * *";
+          currentForm.timeout_seconds = 300;
+          currentForm.enabled = true;
+          envRows.value = [];
+          showTaskModal.value = true;
+          onCronChange();
+        };
+
+        const openEditModal = (task) => {
+          isEditing.value = true;
+          currentForm.id = task.id;
+          currentForm.name = task.name;
+          currentForm.script_path = task.script_path;
+          currentForm.cron_expression = task.cron_expression;
+          currentForm.timeout_seconds = task.timeout_seconds;
+          currentForm.enabled = task.enabled;
+          
+          envRows.value = Object.entries(task.env_vars || {}).map(([k, v]) => ({ key: k, value: v }));
+          showTaskModal.value = true;
+          onCronChange();
+        };
+
+        const addEnvRow = () => envRows.value.push({ key: "", value: "" });
+        const removeEnvRow = (idx) => envRows.value.splice(idx, 1);
+
+        const saveTask = async () => {
+          const env_vars = {};
+          envRows.value.forEach(row => {
+            if (row.key.trim()) env_vars[row.key.trim()] = row.value;
+          });
+
+          const payload = {
+            name: currentForm.name,
+            script_path: currentForm.script_path,
+            cron_expression: currentForm.cron_expression,
+            timeout_seconds: currentForm.timeout_seconds,
+            enabled: currentForm.enabled,
+            env_vars
+          };
+
+          if (isEditing.value) {
+            await apiRequest(`/api/tasks/${currentForm.id}`, {
+              method: "PUT",
+              body: JSON.stringify(payload)
+            });
+          } else {
+            await apiRequest("/api/tasks", {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+          }
+
+          showTaskModal.value = false;
+          await fetchTasks();
+        };
+
+        const toggleTask = async (task) => {
+          await apiRequest(`/api/tasks/${task.id}/toggle`, {
+            method: "POST",
+            body: JSON.stringify({ enabled: !task.enabled })
+          });
+          await fetchTasks();
+        };
+
+        const deleteTask = async (task) => {
+          if (!confirm(`确定要删除任务【${task.name}】吗？`)) return;
+          await apiRequest(`/api/tasks/${task.id}`, { method: "DELETE" });
+          await fetchTasks();
+        };
+
+        // 立即手动触发
+        const runTaskNow = async (task) => {
+          try {
+            const res = await apiRequest(`/api/tasks/${task.id}/run`, { method: "POST" });
+            if (res.code === 0) {
+              await fetchTasks();
+              viewTaskLogs(task, res.data.execution_id);
+            }
+          } catch (e) {
+            alert(e.message || "触发任务失败");
+          }
+        };
+
+        // 查看日志
+        const viewTaskLogs = async (task, targetExecutionId = null) => {
+          activeLogTask.value = task;
+          showLogModal.value = true;
+          currentLogContent.value = "正在加载日志...";
+
+          const res = await apiRequest(`/api/tasks/${task.id}/executions?limit=15`);
+          if (res.code === 0) {
+            executionsList.value = res.data;
+            const chosenId = targetExecutionId || (executionsList.value[0]?.id);
+            if (chosenId) {
+              selectExecution({ id: chosenId });
+            } else {
+              currentLogContent.value = "（该任务尚无历史执行记录）";
+            }
+          }
+        };
+
+        const selectExecution = async (exec) => {
+          selectedExecutionId.value = exec.id;
+          currentLogContent.value = "正在获取日志内容...";
+          
+          if (sseSource) {
+            sseSource.close();
+            sseSource = null;
+          }
+
+          const res = await apiRequest(`/api/executions/${exec.id}/log`);
+          if (res.code === 0) {
+            currentLogContent.value = res.data.content;
+            
+            if (res.data.status === "RUNNING") {
+              isLogStreaming.value = true;
+              sseSource = new EventSource(`/api/executions/${exec.id}/stream`);
+              sseSource.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.finished) {
+                  isLogStreaming.value = false;
+                  sseSource.close();
+                  fetchTasks();
+                } else {
+                  currentLogContent.value += msg.line;
+                }
+              };
+            } else {
+              isLogStreaming.value = false;
+            }
+          }
+        };
+
+        const closeLogModal = () => {
+          showLogModal.value = false;
+          if (sseSource) {
+            sseSource.close();
+            sseSource = null;
+          }
+          isLogStreaming.value = false;
+        };
+
+        const copyLogs = () => {
+          navigator.clipboard.writeText(currentLogContent.value);
+          alert("日志内容已复制到剪贴板");
+        };
+
+        // 脚本中心操作
+        const openScriptModal = (tab = 'list') => {
+          scriptTab.value = tab;
+          fetchScripts();
+          showScriptModal.value = true;
+        };
+
+        const submitPasteScript = async () => {
+          if (!pasteForm.filename.trim()) {
+            alert("请输入脚本文件名");
+            return;
+          }
+          if (!pasteForm.content.trim()) {
+            alert("请输入或粘贴脚本源码内容");
+            return;
+          }
+          isSavingScript.value = true;
+          try {
+            const res = await apiRequest("/api/scripts/save", {
+              method: "POST",
+              body: JSON.stringify(pasteForm)
+            });
+            if (res.code === 0) {
+              alert(res.message);
+              // 如果在新建任务界面，自动选中使用刚保存的脚本
+              if (showTaskModal.value) {
+                currentForm.script_path = res.data.relative_path;
+              }
+              pasteForm.filename = "";
+              pasteForm.content = "";
+              await fetchScripts();
+              scriptTab.value = "list";
+            } else {
+              alert(res.detail || res.message || "保存失败");
+            }
+          } catch (e) {
+            alert(e.message || "网络请求失败");
+          } finally {
+            isSavingScript.value = false;
+          }
+        };
+
+        const handleFileSelected = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            if (!file.name.endsWith(".py")) {
+              alert("仅支持上传 .py 文件");
+              e.target.value = "";
+              return;
+            }
+            selectedFile.value = file;
+          }
+        };
+
+        const submitUploadScript = async () => {
+          if (!selectedFile.value) return;
+          isUploadingScript.value = true;
+          try {
+            const formData = new FormData();
+            formData.append("file", selectedFile.value);
+            formData.append("overwrite", uploadOverwrite.value);
+
+            const token = localStorage.getItem("minicron_token");
+            const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+            const res = await fetch("/api/scripts/upload", {
+              method: "POST",
+              headers,
+              body: formData
+            });
+            const data = await res.json();
+            if (data.code === 0) {
+              alert(data.message);
+              if (showTaskModal.value) {
+                currentForm.script_path = data.data.relative_path;
+              }
+              selectedFile.value = null;
+              await fetchScripts();
+              scriptTab.value = "list";
+            } else {
+              alert(data.detail || data.message || "上传失败");
+            }
+          } catch (e) {
+            alert(e.message || "网络请求失败");
+          } finally {
+            isUploadingScript.value = false;
+          }
+        };
+
+        const deleteScript = async (path) => {
+          if (!confirm(`确定要从 scripts 目录删除脚本【${path}】吗？`)) return;
+          try {
+            const res = await apiRequest(`/api/scripts?path=${encodeURIComponent(path)}`, {
+              method: "DELETE"
+            });
+            if (res.code === 0) {
+              alert(res.message);
+              await fetchScripts();
+            } else {
+              alert(res.detail || res.message || "删除失败");
+            }
+          } catch (e) {
+            alert(e.message || "删除请求失败");
+          }
+        };
+
+        const viewScriptCode = async (path) => {
+          try {
+            const res = await apiRequest(`/api/scripts/content?path=${encodeURIComponent(path)}`);
+            if (res.code === 0) {
+              viewingPath.value = path;
+              viewingCode.value = res.data.content;
+              showCodeViewer.value = true;
+            }
+          } catch (e) {
+            alert(e.message || "读取脚本代码失败");
+          }
+        };
+
+        const copyCode = (code) => {
+          navigator.clipboard.writeText(code);
+          alert("代码已复制到剪贴板");
+        };
+
+        onMounted(() => {
+          checkAuth();
+          setInterval(() => {
+            if (isAuthenticated.value) {
+              fetchSystemStatus();
+            }
+          }, 10000);
+        });
+
+        return {
+          isAuthenticated, loginPassword, loginLoading, loginError, login, logout,
+          tasks, scriptsList, sysStatus, isRefreshing, fetchTasks,
+          showTaskModal, isEditing, currentForm, envRows, addEnvRow, removeEnvRow,
+          saveTask, toggleTask, deleteTask, openCreateModal, openEditModal,
+          cronPreviewRuns, cronPreviewValid, onCronChange,
+          showLogModal, activeLogTask, executionsList, selectedExecutionId, currentLogContent,
+          isLogStreaming, viewTaskLogs, selectExecution, closeLogModal, copyLogs, runTaskNow,
+          showScriptModal, openScriptModal, scriptTab, pasteForm, isSavingScript, submitPasteScript,
+          selectedFile, uploadOverwrite, isUploadingScript, handleFileSelected, submitUploadScript,
+          deleteScript, showCodeViewer, viewingPath, viewingCode, viewScriptCode, copyCode
+        };
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
