@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.models.db import init_db
 from app.core.scheduler import scheduler_manager
 from app.services.package_service import package_manager
-from app.routers import auth, tasks, scripts, system, env_vars, packages
+from app.routers import auth, tasks, scripts, system, env_vars, packages, settings as settings_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,6 +59,7 @@ app.include_router(scripts.router)
 app.include_router(system.router)
 app.include_router(env_vars.router)
 app.include_router(packages.router)
+app.include_router(settings_router.router)
 
 # 挂载前端静态文件 (托管 SPA 单页面)
 static_dir = settings.BASE_DIR / "app" / "static"

@@ -211,5 +211,23 @@ class TaskRunner:
                 )
                 await db.commit()
 
+            # 异步触发结果通知 (不阻塞主流程)
+            try:
+                from app.services.notifier import notifier_service
+                exec_record = {
+                    "id": execution_id,
+                    "task_id": task_id,
+                    "status": status,
+                    "exit_code": exit_code,
+                    "duration_seconds": duration,
+                    "trigger_type": trigger_type,
+                    "start_time": start_iso,
+                    "end_time": end_time.isoformat(),
+                    "log_path": log_filename
+                }
+                asyncio.create_task(notifier_service.notify_task_result(task, exec_record))
+            except Exception as e:
+                print(f"[Runner] 触发通知异常: {e}")
+
 # 全局单例执行器
 task_runner = TaskRunner()

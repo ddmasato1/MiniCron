@@ -108,6 +108,20 @@ class PackageItem(BaseModel):
     is_core: bool = False
     is_custom: bool = False
 
+class NotificationSettings(BaseModel):
+    telegram_enabled: bool = Field(False, description="是否启用 Telegram 通知")
+    telegram_bot_token: Optional[str] = Field("", description="Telegram Bot Token")
+    telegram_chat_id: Optional[str] = Field("", description="Telegram Chat ID")
+    proxy_url: Optional[str] = Field("", description="网络代理地址 (如 http://127.0.0.1:7890 或 socks5://127.0.0.1:1080)")
+    api_base_url: Optional[str] = Field("https://api.telegram.org", description="Telegram API 基础地址 (支持自建反代域名)")
+    notify_policy: str = Field("ONLY_FAILURE", description="通知策略: ONLY_FAILURE (仅失败), ALWAYS (全部), OFF (关闭)")
+
+class NotificationTestRequest(BaseModel):
+    telegram_bot_token: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+    proxy_url: Optional[str] = None
+    api_base_url: Optional[str] = None
+
 class ApiResponse(BaseModel):
     code: int = 0
     message: str = "success"

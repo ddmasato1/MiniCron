@@ -558,4 +558,74 @@
   data: {"line": "", "finished": true}
   ```
 
+---
+
+## 8. 系统通知与网络代理接口 (Notifications & Settings)
+
+### 8.1 获取当前通知与代理配置
+* **路径**：`GET /api/settings/notifications`
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "telegram_enabled": true,
+      "telegram_bot_token": "123456:ABC-DEF...",
+      "telegram_chat_id": "987654321",
+      "proxy_url": "http://127.0.0.1:7890",
+      "api_base_url": "https://api.telegram.org",
+      "notify_policy": "ONLY_FAILURE"
+    }
+  }
+  ```
+
+### 8.2 保存通知与代理配置
+* **路径**：`POST /api/settings/notifications`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "telegram_enabled": true,
+    "telegram_bot_token": "123456:ABC-DEF...",
+    "telegram_chat_id": "987654321",
+    "proxy_url": "http://127.0.0.1:7890",
+    "api_base_url": "https://api.telegram.org",
+    "notify_policy": "ONLY_FAILURE"
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "通知与网络代理配置已成功保存",
+    "data": { ... }
+  }
+  ```
+
+### 8.3 测试 Telegram 通知与代理连通性
+* **路径**：`POST /api/settings/notifications/test`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "telegram_bot_token": "123456:ABC-DEF...",
+    "telegram_chat_id": "987654321",
+    "proxy_url": "socks5://127.0.0.1:1080",
+    "api_base_url": "https://api.telegram.org"
+  }
+  ```
+* **成功响应**：
+  ```json
+  {
+    "code": 0,
+    "message": "测试消息已成功送达 Telegram！请在客户端查收"
+  }
+  ```
+* **连通失败响应 (带友好诊断原因)**：
+  ```json
+  {
+    "code": 400,
+    "message": "代理连接失败，请检查代理地址是否可用或端口是否正确: ..."
+  }
+  ```
+
 

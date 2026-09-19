@@ -92,46 +92,35 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- 依赖管理按钮 -->
-          <button 
-            @click="openPackageModal" 
-            class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg transition flex items-center gap-1.5"
-            title="管理 Python 依赖库与模块（在线安装/卸载）"
-          >
-            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-            <span>依赖管理 ({{ packagesList.length }})</span>
-          </button>
-          <!-- 环境变量管理按钮 -->
-          <button 
-            @click="openEnvModal" 
-            class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg transition flex items-center gap-1.5"
-            title="配置全局环境变量（自动注入所有脚本）"
-          >
-            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-            <span>环境变量 ({{ envVarsList.length }})</span>
-          </button>
-          <!-- 脚本管理按钮 -->
+          <!-- 脚本管理按钮 (核心资产) -->
           <button 
             @click="openScriptModal('list')" 
-            class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg transition flex items-center gap-1.5"
+            class="text-xs bg-slate-700/80 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl border border-slate-600/50 transition flex items-center gap-1.5 shadow-sm"
             title="管理 scripts 目录脚本（查看/编辑/粘贴/上传）"
           >
             <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-            <span>脚本管理 ({{ scriptsList.length }})</span>
+            <span class="font-medium">脚本管理</span>
+            <span class="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-full border border-indigo-500/30">{{ scriptsList.length }}</span>
           </button>
-          <!-- 修改密码按钮 -->
+
+          <!-- 统一系统设置中心按钮 -->
           <button 
-            @click="openChangePasswordModal" 
-            class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg transition flex items-center gap-1.5"
-            title="修改管理员登录密码"
+            @click="openSettingsModal('notification')" 
+            class="text-xs bg-slate-700/80 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl border border-slate-600/50 transition flex items-center gap-1.5 shadow-sm"
+            title="系统设置中心（通知与代理、环境变量、依赖管理、修改密码）"
           >
-            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-            <span>修改密码</span>
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span class="font-medium">设置中心</span>
           </button>
+
+          <!-- 分隔线 -->
+          <div class="h-4 w-px bg-slate-700 mx-1"></div>
+
           <!-- 退出登录 -->
           <button 
             @click="logout" 
-            class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 px-3 py-2 rounded-lg transition flex items-center gap-1"
+            class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 px-3 py-2 rounded-xl transition flex items-center gap-1"
+            title="退出登录"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             <span>退出</span>
@@ -168,14 +157,6 @@
               title="刷新列表"
             >
               <svg class="w-4 h-4" :class="{'animate-spin': isRefreshing}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-            <button 
-              @click="openScriptModal('paste')" 
-              class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 font-medium px-3.5 py-2.5 rounded-xl text-sm transition flex items-center gap-1.5"
-              title="在线粘贴或上传 Python 脚本"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              <span>上传/粘贴脚本</span>
             </button>
             <button 
               @click="openCreateModal" 
@@ -749,179 +730,535 @@
         </div>
       </div>
 
-      <!-- 修改密码模态框 -->
-      <div v-if="showChangePasswordModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+      <!-- 统一系统设置中心模态框 (All-in-One Settings Center) -->
+      <div v-if="showSettingsModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col md:flex-row h-[88vh] max-h-[780px]">
+          
+          <!-- 左侧分类侧边栏 -->
+          <div class="w-full md:w-56 bg-slate-900/90 border-b md:border-b-0 md:border-r border-slate-700/80 flex flex-col shrink-0">
+            <!-- 标题区 -->
+            <div class="p-4 border-b border-slate-700/60 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white text-sm">系统设置中心</h3>
+                  <p class="text-[10px] text-slate-400 font-mono">Preferences</p>
+                </div>
               </div>
-              <h3 class="text-base font-bold text-white">修改管理员密码</h3>
-            </div>
-            <button @click="showChangePasswordModal = false" class="text-slate-400 hover:text-white text-xl">&times;</button>
-          </div>
-
-          <form @submit.prevent="submitChangePassword" class="space-y-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">当前原密码</label>
-              <input 
-                v-model="passwordForm.old_password" 
-                type="password" 
-                placeholder="请输入当前密码（初始默认为 admin123）" 
-                required 
-                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
-              />
+              <button @click="showSettingsModal = false" class="md:hidden text-slate-400 hover:text-white text-xl leading-none">&times;</button>
             </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">新管理密码 (至少 6 位)</label>
-              <input 
-                v-model="passwordForm.new_password" 
-                type="password" 
-                placeholder="请输入新密码" 
-                minlength="6"
-                required 
-                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">确认新管理密码</label>
-              <input 
-                v-model="passwordForm.confirm_password" 
-                type="password" 
-                placeholder="请再次输入新密码" 
-                minlength="6"
-                required 
-                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
-              />
-            </div>
-
-            <p v-if="passwordError" class="text-xs text-rose-400 font-medium">{{ passwordError }}</p>
-            <p v-if="passwordSuccess" class="text-xs text-emerald-400 font-medium">{{ passwordSuccess }}</p>
-
-            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700">
-              <button type="button" @click="showChangePasswordModal = false" class="text-xs text-slate-300 hover:text-white px-4 py-2">取消</button>
+            <!-- Tab 切换导航列表 -->
+            <nav class="p-2 space-y-1 flex-1 overflow-y-auto">
+              <!-- 1. 通知与代理 -->
               <button 
-                type="submit" 
-                :disabled="isChangingPassword"
-                class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-xs px-5 py-2 rounded-xl transition shadow-lg shadow-indigo-600/20"
+                @click="switchSettingsTab('notification')" 
+                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
+                :class="activeSettingsTab === 'notification' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'text-slate-300 hover:bg-slate-800/80'"
               >
-                {{ isChangingPassword ? '正在修改...' : '确认修改密码' }}
+                <div class="flex items-center gap-2.5">
+                  <svg class="w-4 h-4" :class="activeSettingsTab === 'notification' ? 'text-white' : 'text-sky-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                  <span>通知与代理</span>
+                </div>
+                <span v-if="notifyForm.telegram_enabled" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              </button>
+
+              <!-- 2. 全局环境变量 -->
+              <button 
+                @click="switchSettingsTab('env')" 
+                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
+                :class="activeSettingsTab === 'env' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'text-slate-300 hover:bg-slate-800/80'"
+              >
+                <div class="flex items-center gap-2.5">
+                  <svg class="w-4 h-4" :class="activeSettingsTab === 'env' ? 'text-white' : 'text-emerald-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                  <span>全局环境变量</span>
+                </div>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full" :class="activeSettingsTab === 'env' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'">{{ envVarsList.length }}</span>
+              </button>
+
+              <!-- 3. 依赖模块管理 -->
+              <button 
+                @click="switchSettingsTab('packages')" 
+                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
+                :class="activeSettingsTab === 'packages' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'text-slate-300 hover:bg-slate-800/80'"
+              >
+                <div class="flex items-center gap-2.5">
+                  <svg class="w-4 h-4" :class="activeSettingsTab === 'packages' ? 'text-white' : 'text-cyan-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                  <span>Python 依赖管理</span>
+                </div>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full" :class="activeSettingsTab === 'packages' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'">{{ packagesList.length }}</span>
+              </button>
+
+              <!-- 4. 修改管理员密码 -->
+              <button 
+                @click="switchSettingsTab('password')" 
+                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
+                :class="activeSettingsTab === 'password' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'text-slate-300 hover:bg-slate-800/80'"
+              >
+                <div class="flex items-center gap-2.5">
+                  <svg class="w-4 h-4" :class="activeSettingsTab === 'password' ? 'text-white' : 'text-amber-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                  <span>修改管理密码</span>
+                </div>
+              </button>
+            </nav>
+
+            <!-- 桌面端侧边栏底部关闭按钮 -->
+            <div class="hidden md:block p-3 border-t border-slate-800/80">
+              <button 
+                @click="showSettingsModal = false" 
+                class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5"
+              >
+                <span>关闭设置</span>
               </button>
             </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- 全局环境变量管理模态框 -->
-      <div v-if="showEnvModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-          
-          <!-- 弹窗顶栏 -->
-          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-white">全局环境变量管理</h3>
-                <p class="text-xs text-slate-400">已启用的变量将在所有任务脚本执行时自动注入子进程 (os.environ)</p>
-              </div>
-            </div>
-            <button @click="showEnvModal = false" class="text-slate-400 hover:text-white text-xl">&times;</button>
           </div>
 
-          <!-- 操作栏：添加按钮 -->
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-xs text-slate-400 font-mono">共 {{ envVarsList.length }} 个全局变量</div>
-            <button 
-              @click="openEnvFormModal()" 
-              class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              <span>添加环境变量</span>
-            </button>
-          </div>
+          <!-- 右侧内容面板 -->
+          <div class="flex-1 flex flex-col min-w-0 bg-slate-800 overflow-hidden">
+            
+            <!-- 面板 1: 通知与代理设置 -->
+            <div v-if="activeSettingsTab === 'notification'" class="flex-1 flex flex-col min-h-0 overflow-y-auto p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-white">系统通知与网络代理配置</h3>
+                    <p class="text-xs text-slate-400">配置任务执行完毕后的自动报警，支持国内出海网络穿透</p>
+                  </div>
+                </div>
+                <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+              </div>
 
-          <!-- 变量列表 -->
-          <div class="flex-1 overflow-y-auto space-y-2">
-            <div v-if="envVarsList.length === 0" class="text-center py-12 text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-dashed border-slate-700">
-              暂未添加任何全局环境变量，点击右上角「添加环境变量」新增。
+              <form @submit.prevent="saveNotificationSettings" class="space-y-4 text-xs">
+                <!-- 启用 Telegram 开关 -->
+                <div class="flex items-center justify-between bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
+                  <div>
+                    <span class="font-bold text-white text-sm">启用 Telegram 任务结果推送</span>
+                    <p class="text-slate-400 text-[11px] mt-0.5">任务执行完毕后自动推送结果报告至指定 Telegram 对话或群组</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" v-model="notifyForm.telegram_enabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                  </label>
+                </div>
+
+                <!-- Bot Token -->
+                <div>
+                  <label class="block font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
+                  <input 
+                    v-model="notifyForm.telegram_bot_token" 
+                    type="text" 
+                    placeholder="如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
+                  />
+                  <p class="text-[11px] text-slate-500 mt-1">可在 Telegram 联系 @BotFather 创建机器并获取 Token</p>
+                </div>
+
+                <!-- Chat ID -->
+                <div>
+                  <label class="block font-semibold text-slate-300 mb-1">Telegram 接收者 Chat ID</label>
+                  <input 
+                    v-model="notifyForm.telegram_chat_id" 
+                    type="text" 
+                    placeholder="如: 123456789 或 @my_channel"
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
+                  />
+                  <p class="text-[11px] text-slate-500 mt-1">你的个人 Telegram ID，或频道/群组的唯一数字 ID</p>
+                </div>
+
+                <!-- 网络连接模式选择 -->
+                <div class="space-y-2">
+                  <label class="block font-semibold text-slate-300">网络连接模式</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <label 
+                      class="flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer transition text-center"
+                      :class="notifyNetworkMode === 'DIRECT' ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300 shadow-sm shadow-emerald-500/10' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'"
+                    >
+                      <input type="radio" value="DIRECT" v-model="notifyNetworkMode" class="sr-only">
+                      <span class="text-xs font-semibold mb-0.5">🟢 官方直连</span>
+                      <span class="text-[10px] text-slate-500">海外VPS / 无需代理</span>
+                    </label>
+
+                    <label 
+                      class="flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer transition text-center"
+                      :class="notifyNetworkMode === 'PROXY' ? 'bg-indigo-950/40 border-indigo-500 text-indigo-300 shadow-sm shadow-indigo-500/10' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'"
+                    >
+                      <input type="radio" value="PROXY" v-model="notifyNetworkMode" class="sr-only">
+                      <span class="text-xs font-semibold mb-0.5">🌐 正向代理</span>
+                      <span class="text-[10px] text-slate-500">HTTP / SOCKS5</span>
+                    </label>
+
+                    <label 
+                      class="flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer transition text-center"
+                      :class="notifyNetworkMode === 'REVERSE_PROXY' ? 'bg-purple-950/40 border-purple-500 text-purple-300 shadow-sm shadow-purple-500/10' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'"
+                    >
+                      <input type="radio" value="REVERSE_PROXY" v-model="notifyNetworkMode" class="sr-only">
+                      <span class="text-xs font-semibold mb-0.5">🔗 反向代理</span>
+                      <span class="text-[10px] text-slate-500">CF Workers / 反代域名</span>
+                    </label>
+                  </div>
+
+                  <!-- 模式 1：官方直连提示 -->
+                  <div v-if="notifyNetworkMode === 'DIRECT'" class="bg-emerald-950/20 border border-emerald-800/40 p-3 rounded-xl flex items-start gap-2 text-[11px] text-emerald-300">
+                    <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>
+                      <span class="font-bold">无需代理直连模式：</span>直接向 Telegram 官方 API (<code>https://api.telegram.org</code>) 发起请求，无需配置任何代理软件，适用于海外 VPS、香港节点或原生无阻碍网络环境。
+                    </div>
+                  </div>
+
+                  <!-- 模式 2：正向代理配置输入框 -->
+                  <div v-if="notifyNetworkMode === 'PROXY'" class="bg-indigo-950/20 border border-indigo-800/40 p-3.5 rounded-xl space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="font-bold text-indigo-300 flex items-center gap-1">
+                        <span>正向代理地址 (Proxy URL)</span>
+                      </label>
+                      <span class="text-[10px] text-slate-400">支持 HTTP / SOCKS5</span>
+                    </div>
+                    <input 
+                      v-model="notifyForm.proxy_url" 
+                      type="text" 
+                      placeholder="如: http://127.0.0.1:7890 或 socks5://127.0.0.1:1080"
+                      class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-indigo-500 outline-none"
+                    />
+                    <p class="text-[11px] text-slate-400">若服务器位于中国大陆境内，且本地或局域网运行有代理软件（如 Clash、v2ray、xray），填入代理地址即可。</p>
+                  </div>
+
+                  <!-- 模式 3：反向代理配置输入框 -->
+                  <div v-if="notifyNetworkMode === 'REVERSE_PROXY'" class="bg-purple-950/20 border border-purple-800/40 p-3.5 rounded-xl space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="font-bold text-purple-300 flex items-center gap-1">
+                        <span>反向代理 Base URL</span>
+                      </label>
+                      <span class="text-[10px] text-slate-400">免客户端直连方案</span>
+                    </div>
+                    <input 
+                      v-model="notifyForm.api_base_url" 
+                      type="text" 
+                      placeholder="如: https://tg-proxy.yourdomain.com"
+                      class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-purple-500 outline-none"
+                    />
+                    <p class="text-[11px] text-slate-400">支持自建 Cloudflare Workers 或海外 Nginx 反代域名，服务器无需安装或运行任何代理客户端。</p>
+                  </div>
+                </div>
+
+                <!-- 通知触发策略 -->
+                <div>
+                  <label class="block font-semibold text-slate-300 mb-1.5">通知触发策略</label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'ONLY_FAILURE' ? 'bg-indigo-950/40 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
+                      <input type="radio" value="ONLY_FAILURE" v-model="notifyForm.notify_policy" class="text-indigo-600">
+                      <div>
+                        <div class="font-semibold text-xs">仅失败时通知 (推荐)</div>
+                        <div class="text-[10px] text-slate-500">退出码非0或超时才发送，免打扰</div>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'ALWAYS' ? 'bg-indigo-950/40 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
+                      <input type="radio" value="ALWAYS" v-model="notifyForm.notify_policy" class="text-indigo-600">
+                      <div>
+                        <div class="font-semibold text-xs">每次执行均通知</div>
+                        <div class="text-[10px] text-slate-500">无论成功或失败均推送提醒</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 底部操作按钮 -->
+                <div class="flex items-center justify-between pt-4 border-t border-slate-700">
+                  <button 
+                    type="button" 
+                    @click="testNotificationConnection" 
+                    :disabled="isTestingNotify"
+                    class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-sky-300 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 border border-sky-500/30"
+                  >
+                    <svg class="w-3.5 h-3.5" :class="{'animate-spin': isTestingNotify}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>{{ isTestingNotify ? '正在测试连通性...' : '🧪 发送测试通知' }}</span>
+                  </button>
+
+                  <button 
+                    type="submit" 
+                    :disabled="isSavingNotify"
+                    class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs px-5 py-2 rounded-xl transition shadow-lg shadow-indigo-600/20"
+                  >
+                    <span>{{ isSavingNotify ? '正在保存...' : '💾 保存配置' }}</span>
+                  </button>
+                </div>
+              </form>
             </div>
-            <div 
-              v-for="item in envVarsList" 
-              :key="item.id"
-              class="bg-slate-900/80 border border-slate-700/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-600 transition"
-            >
-              <div class="space-y-1 flex-1">
+
+            <!-- 面板 2: 全局环境变量 -->
+            <div v-if="activeSettingsTab === 'env'" class="flex-1 flex flex-col min-h-0 p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-white">全局环境变量管理</h3>
+                    <p class="text-xs text-slate-400">已启用的变量将在所有任务脚本执行时自动注入子进程 (os.environ)</p>
+                  </div>
+                </div>
+                <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+              </div>
+
+              <!-- 操作栏：添加按钮 -->
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-xs text-slate-400 font-mono">共 {{ envVarsList.length }} 个全局变量</div>
+                <button 
+                  @click="openEnvFormModal()" 
+                  class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  <span>添加环境变量</span>
+                </button>
+              </div>
+
+              <!-- 变量列表 -->
+              <div class="flex-1 overflow-y-auto space-y-2">
+                <div v-if="envVarsList.length === 0" class="text-center py-12 text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-dashed border-slate-700">
+                  暂未添加任何全局环境变量，点击右上角「添加环境变量」新增。
+                </div>
+                <div 
+                  v-for="item in envVarsList" 
+                  :key="item.id"
+                  class="bg-slate-900/80 border border-slate-700/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-600 transition"
+                >
+                  <div class="space-y-1 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono text-sm font-bold text-indigo-300">{{ item.key }}</span>
+                      <span 
+                        :class="item.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'"
+                        class="text-[10px] px-2 py-0.5 rounded-full border font-mono font-medium"
+                      >
+                        {{ item.enabled ? '生效中' : '已停用' }}
+                      </span>
+                      <span v-if="item.description" class="text-xs text-slate-400 font-sans">
+                        — {{ item.description }}
+                      </span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 text-xs font-mono text-slate-300">
+                      <span class="text-slate-500">值:</span>
+                      <span class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 select-all">
+                        {{ showSecretEnv[item.id] ? item.value : maskSecret(item.value) }}
+                      </span>
+                      <button 
+                        type="button" 
+                        @click="toggleSecret(item.id)" 
+                        class="text-[11px] text-slate-400 hover:text-slate-200"
+                        :title="showSecretEnv[item.id] ? '隐藏明文' : '显示明文'"
+                      >
+                        {{ showSecretEnv[item.id] ? '隐藏' : '显示' }}
+                      </button>
+                      <button 
+                        type="button" 
+                        @click="copyCode(item.value)" 
+                        class="text-[11px] text-slate-400 hover:text-slate-200"
+                        title="复制变量值"
+                      >
+                        复制
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 操作 -->
+                  <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                    <button 
+                      @click="toggleEnvVar(item)" 
+                      :class="item.enabled ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'"
+                      class="text-xs border px-2.5 py-1 rounded-lg transition"
+                    >
+                      {{ item.enabled ? '禁用' : '启用' }}
+                    </button>
+                    <button 
+                      @click="openEnvFormModal(item)" 
+                      class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-700 transition"
+                    >
+                      编辑
+                    </button>
+                    <button 
+                      @click="deleteEnvVar(item)" 
+                      class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs px-2.5 py-1 rounded-lg transition"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 面板 3: Python 依赖管理 -->
+            <div v-if="activeSettingsTab === 'packages'" class="flex-1 flex flex-col min-h-0 p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-white">Python 依赖与模块管理中心</h3>
+                    <p class="text-xs text-slate-400">运行环境 pip 模块查看、在线安装与管理（自定义安装模块在容器重启时自动恢复）</p>
+                  </div>
+                </div>
+                <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+              </div>
+
+              <!-- 工具栏：搜索与安装按钮 -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-1 max-w-md">
+                  <input 
+                    v-model="searchPkgKeyword" 
+                    type="text" 
+                    placeholder="搜索已安装模块 (如 requests / bs4)..." 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none"
+                  />
+                  <div class="flex bg-slate-900 rounded-xl p-0.5 border border-slate-700 text-xs">
+                    <button 
+                      @click="pkgFilterTab = 'all'" 
+                      :class="pkgFilterTab === 'all' ? 'bg-slate-700 text-white font-medium' : 'text-slate-400 hover:text-slate-200'"
+                      class="px-2.5 py-1 rounded-lg transition"
+                    >全部 ({{ packagesList.length }})</button>
+                    <button 
+                      @click="pkgFilterTab = 'custom'" 
+                      :class="pkgFilterTab === 'custom' ? 'bg-slate-700 text-emerald-400 font-medium' : 'text-slate-400 hover:text-slate-200'"
+                      class="px-2.5 py-1 rounded-lg transition"
+                    >用户 ({{ packagesList.filter(p => p.is_custom).length }})</button>
+                  </div>
+                </div>
+
                 <div class="flex items-center gap-2">
-                  <span class="font-mono text-sm font-bold text-indigo-300">{{ item.key }}</span>
-                  <span 
-                    :class="item.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'"
-                    class="text-[10px] px-2 py-0.5 rounded-full border font-mono font-medium"
-                  >
-                    {{ item.enabled ? '生效中' : '已停用' }}
-                  </span>
-                  <span v-if="item.description" class="text-xs text-slate-400 font-sans">
-                    — {{ item.description }}
-                  </span>
-                </div>
-                
-                <div class="flex items-center gap-2 text-xs font-mono text-slate-300">
-                  <span class="text-slate-500">值:</span>
-                  <span class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 select-all">
-                    {{ showSecretEnv[item.id] ? item.value : maskSecret(item.value) }}
-                  </span>
                   <button 
-                    type="button" 
-                    @click="toggleSecret(item.id)" 
-                    class="text-[11px] text-slate-400 hover:text-slate-200"
-                    :title="showSecretEnv[item.id] ? '隐藏明文' : '显示明文'"
+                    @click="fetchPackages" 
+                    class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-xl text-xs transition"
+                    title="刷新模块列表"
                   >
-                    {{ showSecretEnv[item.id] ? '隐藏' : '显示' }}
+                    <svg class="w-4 h-4" :class="{'animate-spin': isRefreshingPackages}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                   </button>
                   <button 
-                    type="button" 
-                    @click="copyCode(item.value)" 
-                    class="text-[11px] text-slate-400 hover:text-slate-200"
-                    title="复制变量值"
+                    @click="openInstallPackageModal()" 
+                    class="bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-lg shadow-cyan-600/20"
                   >
-                    复制
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>安装新依赖</span>
                   </button>
                 </div>
               </div>
 
-              <!-- 操作 -->
-              <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
-                <button 
-                  @click="toggleEnvVar(item)" 
-                  :class="item.enabled ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'"
-                  class="text-xs border px-2.5 py-1 rounded-lg transition"
+              <!-- 模块列表 -->
+              <div class="flex-1 overflow-y-auto space-y-1.5 term-scroll">
+                <div v-if="filteredPackages.length === 0" class="text-center py-12 text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-dashed border-slate-700">
+                  {{ searchPkgKeyword ? '未搜索到匹配的 Python 模块' : '暂无模块数据' }}
+                </div>
+                <div 
+                  v-for="pkg in filteredPackages" 
+                  :key="pkg.name" 
+                  class="bg-slate-900/70 border border-slate-700/60 rounded-xl px-4 py-2.5 flex items-center justify-between hover:border-slate-600 transition font-mono text-xs"
                 >
-                  {{ item.enabled ? '禁用' : '启用' }}
-                </button>
-                <button 
-                  @click="openEnvFormModal(item)" 
-                  class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-700 transition"
-                >
-                  编辑
-                </button>
-                <button 
-                  @click="deleteEnvVar(item)" 
-                  class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs px-2.5 py-1 rounded-lg transition"
-                >
-                  删除
-                </button>
+                  <div class="flex items-center gap-3">
+                    <span :class="pkg.is_custom ? 'bg-emerald-400' : (pkg.is_core ? 'bg-indigo-400' : 'bg-slate-500')" class="w-2 h-2 rounded-full flex-shrink-0"></span>
+                    <span class="text-white font-bold">{{ pkg.name }}</span>
+                    <span class="text-slate-400">v{{ pkg.version }}</span>
+                    <span 
+                      v-if="pkg.is_custom" 
+                      class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-sans"
+                    >用户安装 · 持久化</span>
+                    <span 
+                      v-else-if="pkg.is_core" 
+                      class="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full font-sans"
+                    >系统核心</span>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button 
+                      v-if="!pkg.is_core" 
+                      @click="uninstallPackage(pkg)" 
+                      class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-lg text-xs font-sans transition"
+                      title="卸载该模块"
+                    >
+                      卸载
+                    </button>
+                    <span v-else class="text-[11px] text-slate-600 font-sans px-2 select-none">
+                      受保护
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- 面板 4: 修改管理员密码 -->
+            <div v-if="activeSettingsTab === 'password'" class="flex-1 flex flex-col min-h-0 p-6 space-y-4 max-w-md">
+              <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-white">修改管理员密码</h3>
+                    <p class="text-xs text-slate-400">修改 MiniCron Web 控制台访问口令</p>
+                  </div>
+                </div>
+                <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+              </div>
+
+              <form @submit.prevent="submitChangePassword" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">当前原密码</label>
+                  <input 
+                    v-model="passwordForm.old_password" 
+                    type="password" 
+                    placeholder="请输入当前密码（初始默认为 admin123）" 
+                    required 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">新管理密码 (至少 6 位)</label>
+                  <input 
+                    v-model="passwordForm.new_password" 
+                    type="password" 
+                    placeholder="请输入新密码" 
+                    minlength="6"
+                    required 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">确认新管理密码</label>
+                  <input 
+                    v-model="passwordForm.confirm_password" 
+                    type="password" 
+                    placeholder="请再次输入新密码" 
+                    minlength="6"
+                    required 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <p v-if="passwordError" class="text-xs text-rose-400 font-medium">{{ passwordError }}</p>
+                <p v-if="passwordSuccess" class="text-xs text-emerald-400 font-medium">{{ passwordSuccess }}</p>
+
+                <div class="pt-3 border-t border-slate-700">
+                  <button 
+                    type="submit" 
+                    :disabled="isChangingPassword"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-xs py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/20"
+                  >
+                    {{ isChangingPassword ? '正在修改...' : '确认修改密码' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
           </div>
         </div>
       </div>
 
-      <!-- 添加/编辑环境变量小弹窗 -->
-      <div v-if="showEnvFormModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <!-- 添加/编辑环境变量小弹窗 (z-60) -->
+      <div v-if="showEnvFormModal" class="fixed inset-0 z-60 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
             <h3 class="text-base font-bold text-white">{{ isEditingEnv ? '编辑全局环境变量' : '新增全局环境变量' }}</h3>
@@ -973,110 +1310,8 @@
         </div>
       </div>
 
-      <!-- 依赖库与模块管理模态框 -->
-      <div v-if="showPackageModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-          
-          <!-- 弹窗顶栏 -->
-          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-white">Python 依赖与模块管理中心</h3>
-                <p class="text-xs text-slate-400">运行环境 pip 模块查看、在线安装与管理（自定义安装模块在容器重启时自动持久化恢复）</p>
-              </div>
-            </div>
-            <button @click="showPackageModal = false" class="text-slate-400 hover:text-white text-xl">&times;</button>
-          </div>
-
-          <!-- 工具栏：搜索与安装按钮 -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex items-center gap-2 flex-1 max-w-md">
-              <input 
-                v-model="searchPkgKeyword" 
-                type="text" 
-                placeholder="搜索已安装模块 (如 requests / bs4)..." 
-                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none"
-              />
-              <div class="flex bg-slate-900 rounded-xl p-0.5 border border-slate-700 text-xs">
-                <button 
-                  @click="pkgFilterTab = 'all'" 
-                  :class="pkgFilterTab === 'all' ? 'bg-slate-700 text-white font-medium' : 'text-slate-400 hover:text-slate-200'"
-                  class="px-2.5 py-1 rounded-lg transition"
-                >全部 ({{ packagesList.length }})</button>
-                <button 
-                  @click="pkgFilterTab = 'custom'" 
-                  :class="pkgFilterTab === 'custom' ? 'bg-slate-700 text-emerald-400 font-medium' : 'text-slate-400 hover:text-slate-200'"
-                  class="px-2.5 py-1 rounded-lg transition"
-                >用户安装 ({{ packagesList.filter(p => p.is_custom).length }})</button>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button 
-                @click="fetchPackages" 
-                class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-xl text-xs transition"
-                title="刷新模块列表"
-              >
-                <svg class="w-4 h-4" :class="{'animate-spin': isRefreshingPackages}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              </button>
-              <button 
-                @click="openInstallPackageModal()" 
-                class="bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-lg shadow-cyan-600/20"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>安装新依赖</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 模块列表 -->
-          <div class="flex-1 overflow-y-auto space-y-1.5 term-scroll">
-            <div v-if="filteredPackages.length === 0" class="text-center py-12 text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-dashed border-slate-700">
-              {{ searchPkgKeyword ? '未搜索到匹配的 Python 模块' : '暂无模块数据' }}
-            </div>
-            <div 
-              v-for="pkg in filteredPackages" 
-              :key="pkg.name" 
-              class="bg-slate-900/70 border border-slate-700/60 rounded-xl px-4 py-2.5 flex items-center justify-between hover:border-slate-600 transition font-mono text-xs"
-            >
-              <div class="flex items-center gap-3">
-                <span :class="pkg.is_custom ? 'bg-emerald-400' : (pkg.is_core ? 'bg-indigo-400' : 'bg-slate-500')" class="w-2 h-2 rounded-full flex-shrink-0"></span>
-                <span class="text-white font-bold">{{ pkg.name }}</span>
-                <span class="text-slate-400">v{{ pkg.version }}</span>
-                <span 
-                  v-if="pkg.is_custom" 
-                  class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-sans"
-                >用户安装 · 持久化</span>
-                <span 
-                  v-else-if="pkg.is_core" 
-                  class="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full font-sans"
-                >系统核心</span>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <button 
-                  v-if="!pkg.is_core" 
-                  @click="uninstallPackage(pkg)" 
-                  class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-lg text-xs font-sans transition"
-                  title="卸载该模块"
-                >
-                  卸载
-                </button>
-                <span v-else class="text-[11px] text-slate-600 font-sans px-2 select-none">
-                  受保护
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- 安装新依赖弹窗 (含实时终端日志) -->
-      <div v-if="showInstallPackageModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <!-- 安装新依赖弹窗 (含实时终端日志) (z-60) -->
+      <div v-if="showInstallPackageModal" class="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
           
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -1230,6 +1465,10 @@
         const editorSaveSuccess = ref(false);
         const scriptEditorTextarea = ref(null);
 
+        // 统一系统设置中心
+        const showSettingsModal = ref(false);
+        const activeSettingsTab = ref('notification'); // 'notification' | 'env' | 'packages' | 'password'
+
         // 修改密码
         const showChangePasswordModal = ref(false);
         const passwordForm = reactive({
@@ -1240,6 +1479,20 @@
         const passwordError = ref("");
         const passwordSuccess = ref("");
         const isChangingPassword = ref(false);
+
+        // 系统通知与网络代理设置
+        const showNotificationModal = ref(false);
+        const notifyNetworkMode = ref('DIRECT'); // DIRECT, PROXY, REVERSE_PROXY
+        const notifyForm = reactive({
+          telegram_enabled: false,
+          telegram_bot_token: "",
+          telegram_chat_id: "",
+          proxy_url: "",
+          api_base_url: "https://api.telegram.org",
+          notify_policy: "ONLY_FAILURE"
+        });
+        const isTestingNotify = ref(false);
+        const isSavingNotify = ref(false);
 
         // 全局环境变量
         const envVarsList = ref([]);
@@ -1686,7 +1939,7 @@
           passwordForm.confirm_password = "";
           passwordError.value = "";
           passwordSuccess.value = "";
-          showChangePasswordModal.value = true;
+          openSettingsModal('password');
         };
 
         const submitChangePassword = async () => {
@@ -1715,10 +1968,7 @@
               })
             });
             if (res.code === 0) {
-              passwordSuccess.value = res.message || "密码修改成功！";
-              setTimeout(() => {
-                showChangePasswordModal.value = false;
-              }, 1200);
+              passwordSuccess.value = res.message || "密码修改成功！下次登录生效。";
             } else {
               passwordError.value = res.detail || res.message || "密码修改失败";
             }
@@ -1819,8 +2069,7 @@
         };
 
         const openEnvModal = () => {
-          showEnvModal.value = true;
-          fetchEnvVars();
+          openSettingsModal('env');
         };
 
         const openEnvFormModal = (item = null) => {
@@ -1927,8 +2176,7 @@
         };
 
         const openPackageModal = () => {
-          showPackageModal.value = true;
-          fetchPackages();
+          openSettingsModal('packages');
         };
 
         const openInstallPackageModal = (prefillName = "") => {
@@ -2027,6 +2275,113 @@
           }
         };
 
+        // 统一系统设置中心
+        const fetchNotificationSettings = async () => {
+          try {
+            const res = await apiRequest("/api/settings/notifications");
+            if (res.code === 0 && res.data) {
+              Object.assign(notifyForm, res.data);
+              // 根据已有配置自动判定网络连接模式
+              if (notifyForm.proxy_url && notifyForm.proxy_url.trim()) {
+                notifyNetworkMode.value = 'PROXY';
+              } else if (notifyForm.api_base_url && notifyForm.api_base_url.trim() && notifyForm.api_base_url.trim() !== 'https://api.telegram.org') {
+                notifyNetworkMode.value = 'REVERSE_PROXY';
+              } else {
+                notifyNetworkMode.value = 'DIRECT';
+              }
+            }
+          } catch (e) {
+            console.error("加载通知配置失败:", e);
+          }
+        };
+
+        const openSettingsModal = async (tab = 'notification') => {
+          activeSettingsTab.value = tab;
+          showSettingsModal.value = true;
+          if (tab === 'notification') {
+            await fetchNotificationSettings();
+          } else if (tab === 'env') {
+            await fetchEnvVars();
+          } else if (tab === 'packages') {
+            await fetchPackages();
+          }
+        };
+
+        const switchSettingsTab = async (tab) => {
+          activeSettingsTab.value = tab;
+          if (tab === 'notification') {
+            await fetchNotificationSettings();
+          } else if (tab === 'env') {
+            await fetchEnvVars();
+          } else if (tab === 'packages') {
+            await fetchPackages();
+          }
+        };
+
+        const openNotificationModal = () => openSettingsModal('notification');
+
+        const saveNotificationSettings = async () => {
+          isSavingNotify.value = true;
+          try {
+            const payload = { ...notifyForm };
+            if (notifyNetworkMode.value === 'DIRECT') {
+              payload.proxy_url = '';
+              payload.api_base_url = 'https://api.telegram.org';
+            } else if (notifyNetworkMode.value === 'PROXY') {
+              payload.api_base_url = 'https://api.telegram.org';
+            } else if (notifyNetworkMode.value === 'REVERSE_PROXY') {
+              payload.proxy_url = '';
+            }
+            const res = await apiRequest("/api/settings/notifications", {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+            if (res.code === 0) {
+              alert("通知与代理配置已成功保存！");
+            } else {
+              alert(res.message || "保存失败");
+            }
+          } catch (e) {
+            alert(e.message || "网络请求异常");
+          } finally {
+            isSavingNotify.value = false;
+          }
+        };
+
+        const testNotificationConnection = async () => {
+          if (!notifyForm.telegram_bot_token.trim()) {
+            alert("请先填写 Telegram Bot Token");
+            return;
+          }
+          if (!notifyForm.telegram_chat_id.trim()) {
+            alert("请先填写 Telegram Chat ID");
+            return;
+          }
+          isTestingNotify.value = true;
+          try {
+            const testPayload = {
+              telegram_bot_token: notifyForm.telegram_bot_token,
+              telegram_chat_id: notifyForm.telegram_chat_id,
+              notify_policy: notifyForm.notify_policy,
+              proxy_url: notifyNetworkMode.value === 'PROXY' ? notifyForm.proxy_url : '',
+              api_base_url: notifyNetworkMode.value === 'REVERSE_PROXY' ? notifyForm.api_base_url : 'https://api.telegram.org'
+            };
+            const res = await apiRequest("/api/settings/notifications/test", {
+              method: "POST",
+              body: JSON.stringify(testPayload)
+            });
+            if (res.code === 0) {
+              alert(res.message || "测试消息已成功送达！");
+            } else {
+              alert("测试发送失败：\n" + (res.message || "未知错误"));
+            }
+          } catch (e) {
+            alert("请求异常: " + e.message);
+          } finally {
+            isTestingNotify.value = false;
+          }
+        };
+
         onMounted(() => {
           checkAuth();
           setInterval(() => {
@@ -2061,7 +2416,12 @@
           showInstallPackageModal, installPkgForm, isInstallingPackage, installStatusResult,
           installLogContent, installLogContainer, filteredPackages, detectedMissingModule,
           fetchPackages, openPackageModal, openInstallPackageModal, closeInstallPackageModal,
-          quickInstallMissingModule, submitInstallPackage, uninstallPackage
+          quickInstallMissingModule, submitInstallPackage, uninstallPackage,
+          // 统一系统设置中心
+          showSettingsModal, activeSettingsTab, openSettingsModal, switchSettingsTab,
+          // 系统通知与网络代理
+          showNotificationModal, notifyNetworkMode, notifyForm, isTestingNotify, isSavingNotify,
+          openNotificationModal, saveNotificationSettings, testNotificationConnection
         };
       }
     }).mount("#app");

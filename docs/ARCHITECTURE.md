@@ -28,6 +28,7 @@ flowchart TD
             Security["安全守卫 (SecurityGuard)<br/>Path Sandbox + No-Shell Argv"]
             Runner["异步任务执行器 (TaskRunner)<br/>Async Subprocess + Stream Tee"]
             PkgMgr["依赖管理器 (PackageManager)<br/>pip Subprocess + SSE Broadcast"]
+            Notifier["通知推送器 (TelegramNotifier)<br/>Proxy / Reverse Proxy / GFW Traversal"]
         end
 
         subgraph ServiceLayer ["业务服务层"]
@@ -35,6 +36,7 @@ flowchart TD
             LogSvc["日志服务 (LogService)"]
             ScriptSvc["脚本服务 (ScriptService)"]
             EnvVarSvc["环境变量服务 (EnvVarService)"]
+            SettingsSvc["系统设置服务 (SettingsService)"]
         end
     end
 
@@ -42,6 +44,12 @@ flowchart TD
         DB[("SQLite 数据库 (minicron.db)<br/>tasks / task_executions<br/>global_env_vars / custom_packages<br/>system_configs")]
         LogFiles["执行日志目录<br/>(data/logs/)"]
         ScriptFiles["白名单脚本目录<br/>(scripts/*.py)"]
+    end
+
+    subgraph External ["外部推送网关 (External Gateway)"]
+        ForwardProxy["正向代理 (HTTP/SOCKS5)<br/>(如: Clash/v2ray 127.0.0.1:7890)"]
+        ReverseProxy["反向代理 Base URL<br/>(如: Cloudflare Workers)"]
+        TelegramAPI["Telegram Bot API<br/>(api.telegram.org)"]
     end
 
     UI <-->|HTTP REST / Server-Sent Events| Router
@@ -53,6 +61,7 @@ flowchart TD
     ScriptSvc --> ScriptFiles
     EnvVarSvc --> DB
     PkgMgr --> DB
+    SettingsSvc --> DB
     
     Scheduler -->|定时触发| Runner
     TaskSvc -->|手动触发 Run Now| Runner
@@ -66,6 +75,12 @@ flowchart TD
     Runner -->|写入日志| LogFiles
     Runner -->|回填执行结果| LogSvc
     LogSvc --> DB
+    
+    Runner -.->|异步非阻塞触发通知| Notifier
+    Notifier --> DB
+    Notifier -->|方案 A: 正向代理转发| ForwardProxy --> TelegramAPI
+    Notifier -->|方案 B: 自建反代直连| ReverseProxy --> TelegramAPI
+    Notifier -->|方案 C: 直连海外官方| TelegramAPI
 ```
 
 ---
@@ -142,6 +157,30 @@ flowchart TD
 * **多源优先降级策略**：
   * 优先读取 SQLite `system_configs` 中键为 `admin_password_hash` 的记录；
   * 若数据库未配置，则回退兼容环境变量 `ADMIN_PASSWORD` 或默认密码 `admin123`。
+
+### 3.7 结果通知与出海代理转发拓扑 (`app.services.notifier`)
+为了解决国内服务器因防火墙拦截无法直连 Telegram Bot API 的痛点，MiniCron 提供了自适应多路转发架构：
+* **推送策略治理 (`notify_policy`)**：
+  * `ONLY_FAILURE`（默认推荐）：仅在任务返回非 0 退出码或超时强杀时推送，避免日常签到成功消息轰炸；
+  * `ALWAYS`：无论成功或失败均推送；
+  * `OFF`：关闭推送。
+* **国内网络穿透与代理分发方案**：
+  * **正向代理 (Forward Proxy)**：
+    * 支持 `http://`、`https://`、`socks5://`、`socks5h://` 协议（底层集成 `requests` + `PySocks`）；
+    * 典型场景：服务器本地或局域网部署有 Clash/v2ray 代理端口（如 `http://127.0.0.1:7890` 或 `socks5://192.168.1.5:1080`）。
+  * **反向代理 Base URL (Reverse Proxy)**：
+    * 支持将官方 `https://api.telegram.org` 替换为自定义反代域名（如 `https://tg-proxy.yourdomain.com` 或 Cloudflare Workers 反代）；
+    * 优势：国内服务器**无需安装任何代理客户端**即可稳定推送到 Telegram。
+* **智能业务日志清洗与 HTML 富文本格式化 (`_extract_clean_script_output`)**：
+  * **剥离系统标记**：自动识别并过滤 MiniCron 内部运行标记（`=== [MiniCron] ... ===`、`=== 脚本: ... ===`、`=== 已注入环境变量: ... ===`）以及终端 ANSI 颜色转义符；
+  * **提取业务结果**：无论任务成功还是失败，均从执行日志中提取脚本产生的真实业务输出（如登录用户名、签到积分、业务结论等）；
+  * **尾部关键结论保护**：针对签到脚本核心结论通常位于日志末尾的特点，超长日志自动截取末尾核心行数（最多 35 行 / 2800 字符），前文标注 `... (前文日志已折叠) ...`；
+  * **安全转义**：经过 `html.escape` 安全转义后置入 Telegram `<pre>...</pre>` 块，避免特殊字符导致 Telegram API 解析错误。
+* **内置 `notify.py` 兼容垫片 (青龙面板脚本零侵入)**：
+  * 在 `scripts/` 目录内置标准 `notify.py` 模块，提供符合规范的 `send(title, content)` 函数；
+  * 脚本运行时工作目录（`cwd`）即为 `scripts/`，因此脚本直接执行 `from notify import send` 即可开箱即用，消除缺文件警告，输出直接打入标准输出由 MiniCron 捕获并推送到 Telegram。
+* **异步非阻塞解耦**：
+  * 任务执行器 `runner.py` 在子进程执行完毕并完成数据库落盘后，通过 `asyncio.create_task` 异步触发通知服务，确保推送网络耗时绝对不会阻塞任务主流程。
 
 ---
 
@@ -249,8 +288,8 @@ erDiagram
 
     SYSTEM_CONFIG {
         int id PK "自增主键"
-        string key "配置项键名 (如: admin_password_hash，唯一索引)"
-        string value "配置项数值"
+        string key "配置项键名 (如: admin_password_hash / notification_settings，唯一索引)"
+        string value "配置项数值 (JSON 或哈希字符串)"
         datetime updated_at "最后更新时间"
     }
 ```
@@ -264,9 +303,11 @@ erDiagram
   * 基于现代化 ESM 模块化加载的 Vue 3 + Tailwind CSS。
   * 零构建步骤（无需本地 Node.js、npm build），直接由 FastAPI 的 `StaticFiles` 服务高效托管。
 * **界面模块划分**：
-  1. **Dashboard 顶部全局导航**：
+  1. **Dashboard 顶部极简全局导航**：
      * 系统状态指标（实时时间、运行中任务数、系统内存占用）；
-     * 快捷运维入口：**「🌐 环境变量」**、**「📦 依赖管理」**、**「🔑 修改密码」**、**「🚪 退出登录」**。
+     * 核心资产入口：**「📄 脚本管理」**（展示脚本总数徽标）；
+     * 一体化控制台：**「⚙️ 设置中心」**（集合通知与代理、环境变量、依赖管理、管理员密码）；
+     * 账户安全：**「🚪 退出登录」**。
   2. **任务主看板**：
      * 表格/卡片布局展示所有任务，显示状态、上次耗时、下次触发时间；
      * 操作栏：一键“立即运行”、“查看最新日志”、“编辑”、“启用/禁用开关”。
@@ -281,17 +322,12 @@ erDiagram
      * 涵盖已有脚本清单、在线粘贴编写保存、本地 `.py` 文件拖拽上传、在线源码只读查看；
      * **在线代码编辑器**：提供代码高亮、行号与字数统计、Tab 插入 4 空格、`Ctrl+S` / `Cmd+S` 快捷键瞬间保存；
      * **防误删保护机制**：删除脚本前自动检测关联定时任务，被引用时强制拦截并友好提示。
-  6. **全局环境变量管理面板 (Env Modal)**：
-     * 统一管理所有任务共享的全局配置；
-     * 敏感密钥脱敏掩码显示、支持小眼睛一键明暗文切换与便捷复制；
-     * 支持单个变量无损启停切换与在线修改。
-  7. **第三方依赖管理中心 (Package Modal)**：
-     * 实时检索当前 Python 环境已安装模块，区分核心系统库与自定义扩展；
-     * 在线安装模块：支持输入包名与版本，内置清华源、阿里源、腾讯源、官方源下拉选择；
-     * **SSE 实时终端日志流**：安装过程实时回显终端控制台；
-     * 核心依赖保护：严密禁用核心库的卸载入口，杜绝系统崩溃风险。
-  8. **管理员密码修改弹窗 (Password Modal)**：
-     * 原密码验证防非法篡改，新密码二次确认校验，修改成功自动持久化并更新当前凭证。
+  6. **一体化系统设置中心 (All-in-One Settings Hub)**：
+     * 采用侧边栏 Tab 标签切换架构，彻底消除顶栏拥挤，将 4 大系统级模块收敛整合：
+       * 🔔 **通知与出海代理**：Telegram Token、Chat ID、三选一网络连接模式（直连/正向代理/反向代理）与实时测试；
+       * 🌐 **全局环境变量**：敏感密钥脱敏掩码、明暗文切换、复制、启停与快速增删改；
+       * 📦 **Python 依赖管理**：模块清单、在线 pip 安装、清华/阿里/腾讯源切换、SSE 终端日志流；
+       * 🔑 **安全与修改密码**：原密码比对、新密码安全校验与持久化落库。
 
 ---
 
