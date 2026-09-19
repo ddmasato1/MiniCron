@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import asyncio
 from app.core.config import settings
 from app.models.db import init_db
 from app.core.scheduler import scheduler_manager
-from app.routers import auth, tasks, scripts, system
+from app.services.package_service import package_manager
+from app.routers import auth, tasks, scripts, system, env_vars, packages
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +26,9 @@ async def lifespan(app: FastAPI):
     logger.info("[Init] 正在加载定时任务至 APScheduler...")
     scheduler_manager.start()
     await scheduler_manager.reload_all_jobs()
+
+    # 3. 异步后台检测并恢复自定义依赖模块
+    asyncio.create_task(package_manager.restore_custom_packages())
 
     logger.info(f"🚀 MiniCron 启动完毕！访问地址: http://{settings.HOST}:{settings.PORT}")
     yield
@@ -52,6 +57,8 @@ app.include_router(auth.router)
 app.include_router(tasks.router)
 app.include_router(scripts.router)
 app.include_router(system.router)
+app.include_router(env_vars.router)
+app.include_router(packages.router)
 
 # 挂载前端静态文件 (托管 SPA 单页面)
 static_dir = settings.BASE_DIR / "app" / "static"

@@ -24,19 +24,22 @@
 MiniCron/
 ├── docs/                      # 核心规范与设计文档
 │   ├── PRD.md                 # 产品需求规格说明书
-│   ├── ARCHITECTURE.md        # 系统架构设计方案 (含 Mermaid 图解)
+│   ├── ARCHITECTURE.md        # 系统架构设计方案 (含 Mermaid 拓扑与 E-R 图)
 │   └── API_SPEC.md            # RESTful API 接口规范
 ├── app/                       # 核心业务源码 (FastAPI)
-│   ├── core/                  # 配置管理、APScheduler 调度生命周期、安全鉴权
-│   ├── models/                # SQLite 数据模型
-│   ├── routers/               # 任务/执行/系统 API 路由
-│   ├── services/              # 任务安全执行器、日志流处理
-│   └── static/                # 现代化 Web 控制台 (SPA)
-├── scripts/                   # 用户定时 Python 脚本存放目录 (通过 Web 控制台上传/新建，代码库默认忽略)
+│   ├── core/                  # 配置管理、APScheduler 调度生命周期、PBKDF2 安全鉴权
+│   ├── models/                # SQLite 数据模型与 Pydantic 契约
+│   ├── routers/               # 任务/执行/系统/环境/依赖管理 API 路由
+│   ├── services/              # 任务安全执行器、日志流处理、依赖包管理器
+│   └── static/                # 现代化 Web 控制台 (Vue 3 + Tailwind CSS SPA)
+├── scripts/                   # 用户定时 Python 脚本存放目录 (通过 Web 控制台在线编辑/上传/粘贴)
 │   └── .gitkeep
 ├── data/                      # 运行时持久化数据 (Git 忽略)
-│   ├── minicron.db            # SQLite 数据库文件 (自动生成)
-│   └── logs/                  # 每次执行的任务日志归档
+│   ├── minicron.db            # SQLite 数据库文件 (自动生成与迁移)
+│   └── logs/                  # 任务执行日志归档
+├── Dockerfile                 # 98MB 极简 Alpine 生产镜像
+├── docker-compose.yml         # 容器化部署编排 (挂载 data / scripts / app)
+├── verify_minicron.py         # 10 项端到端全链路自动化测试套件
 ├── .gitignore
 ├── README.md
 └── requirements.txt           # Python 核心依赖清单
@@ -52,33 +55,62 @@ MiniCron/
 
 ---
 
-## 🚀 快速起步
+## 🚀 部署与运行方式
 
-### 1. 激活 Conda 独立运行环境
-已为您在本地创建独立的 Conda 环境 `minicron`：
+### 方式一：Docker Compose 容器化部署 (推荐生产部署 🌟)
+无需在服务器上安装 Python 或任何虚拟环境，通过 Docker 直接运行：
+
 ```bash
-source ~/.zshrc
-conda activate minicron
+# 1. 启动容器 (后台运行)
+docker compose up -d
+
+# 2. 查看实时运行日志
+docker compose logs -f
+
+# 3. 停止容器
+docker compose down
 ```
 
-### 2. 方式一：一键脚本启动 (推荐)
-直接运行项目根目录下的启动脚本：
+### 方式二：Docker 单容器运行
 ```bash
+# 1. 构建镜像
+docker build -t minicron:latest .
+
+# 2. 启动容器 (挂载数据与脚本目录)
+docker run -d \
+  --name minicron \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -e ADMIN_PASSWORD="your_secure_password" \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/scripts:/app/scripts \
+  minicron:latest
+```
+
+### 方式三：本地 Conda / Python 环境运行
+```bash
+# 激活本地环境
+source ~/.zshrc
+conda activate minicron
+
+# 启动服务
 ./start.sh
 ```
 
-### 3. 方式二：手动 Python 启动
-```bash
-export ADMIN_PASSWORD="your_secure_password" # 默认 admin123
-python -m app.main
-```
+---
 
-### 4. 访问可视化控制台
+## 🖥️ 访问可视化控制台
 浏览器打开：**`http://localhost:8000`**
-* 默认管理员密码：`admin123`
-* 登录后可自由添加、编辑、开启/暂停定时任务，或点击“立即运行”并实时查看脚本输出日志。
+* **默认管理员密码**：`admin123`（支持在顶部导航栏「修改密码」在线修改并持久化落库，亦可通过环境变量 `ADMIN_PASSWORD` 预设）。
+* **功能亮点**：
+  * 📋 **任务调度**：可视化 Crontab 表达式配置与未来 5 次触发时间预演，一键开启/暂停、手动立即运行。
+  * 📝 **脚本在线编辑**：支持在控制台直接在线编写、编辑、粘贴保存或上传 `.py` 脚本文件，内置 Tab 缩进与 `Ctrl+S` / `Cmd+S` 快捷保存。
+  * 🌐 **环境变量管理**：内置「全局环境变量」管理中心，所有任务脚本执行时自动注入子进程 (`os.environ`)；同时支持任务单独设置专属变量，同名时优先级覆盖全局配置。
+  * 📦 **第三方依赖管理**：在控制台直接管理 Python 模块包（`pip list` / `pip install` / `pip uninstall`），支持清华/阿里/腾讯国内镜像源与 SSE 终端实时流式回显；自定义模块入库持久化并在容器重启时自愈恢复；严密保护核心系统库防止误删。
+  * 🔍 **智能模块诊断**：执行任务报错 `ModuleNotFoundError` 时，日志窗口智能识别缺失包名并提示「一键在线安装」，零门槛解决环境缺失问题。
+  * 📜 **实时日志捕获**：Server-Sent Events (SSE) 终端流式广播与历史日志全量归档。
 
-### 5. 运行自动化测试套件
+### 🧪 运行自动化测试套件
 ```bash
 python verify_minicron.py
 ```

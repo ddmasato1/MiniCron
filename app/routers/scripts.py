@@ -7,7 +7,10 @@ from app.core.security import get_current_admin, validate_script_path
 from app.core.config import settings
 from app.core.scheduler import scheduler_manager
 from app.models.db import get_db
-from app.models.schemas import ApiResponse, CronPreviewRequest, CronPreviewResponse, ScriptSaveRequest
+from app.models.schemas import (
+    ApiResponse, CronPreviewRequest, CronPreviewResponse, 
+    ScriptSaveRequest, ScriptUpdateRequest
+)
 
 router = APIRouter(prefix="/api", tags=["Scripts & Tools"], dependencies=[Depends(get_current_admin)])
 
@@ -54,6 +57,30 @@ async def get_script_content(path: str = Query(..., description="脚本相对路
         return ApiResponse(data={"path": path, "content": content})
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/scripts/content", response_model=ApiResponse)
+async def update_script_content(payload: ScriptUpdateRequest):
+    """在线编辑保存现有脚本代码"""
+    try:
+        abs_path = validate_script_path(payload.path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        abs_path.write_text(payload.content, encoding="utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"保存脚本代码失败: {e}")
+
+    stat = abs_path.stat()
+    return ApiResponse(
+        message=f"脚本 '{payload.path}' 保存成功",
+        data={
+            "relative_path": payload.path,
+            "file_size": stat.st_size,
+            "modified_at": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        }
+    )
+
 
 @router.post("/scripts/save", response_model=ApiResponse)
 async def save_script_content(payload: ScriptSaveRequest):

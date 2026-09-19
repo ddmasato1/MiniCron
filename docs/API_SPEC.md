@@ -58,6 +58,24 @@
   }
   ```
 
+### 2.3 修改管理员密码
+* **路径**：`POST /api/auth/change-password`
+* **鉴权要求**：需登录鉴权 (`Bearer Token` 或 `Cookie`)
+* **请求体 (JSON)**：
+  ```json
+  {
+    "old_password": "current_password",
+    "new_password": "new_secure_password"
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "密码修改成功，新密码已持久化生效"
+  }
+  ```
+
 ---
 
 ## 3. 任务管理接口 (Tasks)
@@ -258,7 +276,29 @@
   }
   ```
 
-### 5.3 本地文件上传保存
+### 5.3 在线编辑更新脚本源码
+* **路径**：`PUT /api/scripts/content`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "path": "custom_checkin.py",
+    "content": "#!/usr/bin/env python3\nprint('Updated Code')"
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "脚本 'custom_checkin.py' 保存成功",
+    "data": {
+      "relative_path": "custom_checkin.py",
+      "file_size": 42,
+      "modified_at": "2026-09-19 08:30:00"
+    }
+  }
+  ```
+
+### 5.4 本地文件上传保存
 * **路径**：`POST /api/scripts/upload`
 * **请求类型**：`multipart/form-data`
 * **表单参数**：
@@ -273,7 +313,7 @@
   }
   ```
 
-### 5.4 删除指定脚本
+### 5.5 删除指定脚本
 * **路径**：`DELETE /api/scripts?path={relative_path}`
 * **特性**：内置任务依赖防护，若存在任何任务引用该脚本将自动阻断并提示关联任务名称。
 * **响应示例**：
@@ -284,7 +324,7 @@
   }
   ```
 
-### 5.2 Cron 表达式时间预览工具
+### 5.6 Cron 表达式时间预览工具
 * **路径**：`POST /api/tools/cron-preview`
 * **请求体 (JSON)**：
   ```json
@@ -310,7 +350,7 @@
   }
   ```
 
-### 5.3 系统状态与探针
+### 5.7 系统状态与探针
 * **路径**：`GET /api/system/status`
 * **响应示例**：
   ```json
@@ -326,3 +366,196 @@
     }
   }
   ```
+
+---
+
+## 6. 全局环境变量接口 (Global Environment Variables)
+
+### 6.1 获取所有全局环境变量列表
+* **路径**：`GET /api/env-vars`
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "success",
+    "data": [
+      {
+        "id": 1,
+        "key": "TG_BOT_TOKEN",
+        "value": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+        "description": "Telegram 告警通知 Bot Token",
+        "enabled": true,
+        "created_at": "2026-09-19 08:00:00",
+        "updated_at": "2026-09-19 08:00:00"
+      }
+    ]
+  }
+  ```
+
+### 6.2 创建新的全局环境变量
+* **路径**：`POST /api/env-vars`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "key": "BARK_KEY",
+    "value": "abcdef123456",
+    "description": "Bark 推送通知密钥",
+    "enabled": true
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "环境变量 'BARK_KEY' 创建成功",
+    "data": { "id": 2, "key": "BARK_KEY" }
+  }
+  ```
+
+### 6.3 修改全局环境变量
+* **路径**：`PUT /api/env-vars/{var_id}`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "key": "BARK_KEY",
+    "value": "new_secret_key",
+    "description": "更新后的 Bark 推送密钥",
+    "enabled": true
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "环境变量更新成功",
+    "data": { "id": 2 }
+  }
+  ```
+
+### 6.4 切换环境变量启用/禁用状态
+* **路径**：`POST /api/env-vars/{var_id}/toggle`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "enabled": false
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "状态切换成功",
+    "data": { "id": 2, "enabled": false }
+  }
+  ```
+
+### 6.5 删除全局环境变量
+* **路径**：`DELETE /api/env-vars/{var_id}`
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "环境变量 'BARK_KEY' 已成功删除"
+  }
+  ```
+
+---
+
+## 7. Python 模块依赖管理接口 (Packages)
+
+### 7.1 获取已安装模块列表
+* **路径**：`GET /api/packages`
+* **鉴权要求**：需管理员鉴权
+* **说明**：获取当前运行环境下所有 pip 模块，标注是否属于 MiniCron 系统核心受保护依赖 (`is_core`) 以及是否属于用户自定义安装持久化依赖 (`is_custom`)。
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "success",
+    "data": [
+      {
+        "name": "requests",
+        "version": "2.31.0",
+        "is_core": true,
+        "is_custom": false
+      },
+      {
+        "name": "pytz",
+        "version": "2024.1",
+        "is_core": false,
+        "is_custom": true
+      }
+    ]
+  }
+  ```
+
+### 7.2 查询模块安装状态
+* **路径**：`GET /api/packages/status`
+* **说明**：检测后台当前是否有正在执行的 `pip install` 任务，防止并发安装产生锁竞争冲突。
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "is_installing": false,
+      "target": null
+    }
+  }
+  ```
+
+### 7.3 在线安装第三方模块
+* **路径**：`POST /api/packages/install`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "name": "beautifulsoup4>=4.12.0",
+    "mirror": "https://pypi.tuna.tsinghua.edu.cn/simple"
+  }
+  ```
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "模块 'beautifulsoup4' 安装成功 (版本: 4.12.3)",
+    "data": {
+      "success": true,
+      "name": "beautifulsoup4",
+      "version": "4.12.3",
+      "message": "模块 'beautifulsoup4' 安装成功 (版本: 4.12.3)"
+    }
+  }
+  ```
+
+### 7.4 卸载自定义模块
+* **路径**：`POST /api/packages/uninstall`
+* **请求体 (JSON)**：
+  ```json
+  {
+    "name": "beautifulsoup4"
+  }
+  ```
+* **说明**：支持卸载用户通过界面安装的第三方模块。若尝试卸载 MiniCron 核心依赖（如 `fastapi`, `apscheduler`），将被安全机制硬阻断拦截（HTTP 400）。
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "模块 'beautifulsoup4' 已成功卸载"
+  }
+  ```
+
+### 7.5 实时流式捕获安装日志 (SSE)
+* **路径**：`GET /api/packages/install/stream`
+* **数据流格式**：`text/event-stream`
+* **事件内容**：
+  ```
+  data: {"line": "Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple\n"}
+
+  data: {"line": "Collecting beautifulsoup4\n"}
+
+  data: {"line": "Successfully installed beautifulsoup4-4.12.3\n"}
+
+  data: {"line": "", "finished": true}
+  ```
+
+

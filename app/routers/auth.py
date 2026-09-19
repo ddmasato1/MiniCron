@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Response, HTTPException, Depends, status
 from app.core.config import settings
-from app.core.security import create_admin_token, get_current_admin
-from app.models.schemas import LoginRequest, ApiResponse
+from app.core.security import (
+    create_admin_token, get_current_admin, verify_admin_password, set_admin_password
+)
+from app.models.schemas import LoginRequest, ChangePasswordRequest, ApiResponse
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 @router.post("/login", response_model=ApiResponse)
 async def login(payload: LoginRequest, response: Response):
     """管理员登录"""
-    if payload.password != settings.ADMIN_PASSWORD:
+    if not await verify_admin_password(payload.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="密码错误，请核对后重试"
@@ -49,3 +51,25 @@ async def logout(response: Response):
     """注销会话"""
     response.delete_cookie("minicron_token")
     return ApiResponse(message="已成功退出登录")
+
+@router.post("/change-password", response_model=ApiResponse)
+async def change_password(payload: ChangePasswordRequest, is_admin: bool = Depends(get_current_admin)):
+    """修改管理员密码"""
+    if not await verify_admin_password(payload.old_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="原密码验证失败，请核对后重试"
+        )
+    if len(payload.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密码长度不能少于6位"
+        )
+    if payload.old_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密码不能与原密码相同"
+        )
+    await set_admin_password(payload.new_password)
+    return ApiResponse(message="密码修改成功，新密码已持久化生效")
+

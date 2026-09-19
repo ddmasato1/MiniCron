@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import time
+import secrets
 from pathlib import Path
 from typing import Optional
 from fastapi import HTTPException, Security, Request, status
@@ -8,6 +9,58 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
 
 security_bearer = HTTPBearer(auto_error=False)
+
+def hash_password(password: str) -> str:
+    """使用 PBKDF2-HMAC-SHA256 对密码进行带盐哈希加密"""
+    salt = secrets.token_hex(16)
+    iterations = 100000
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+    return f"pbkdf2_sha256${iterations}${salt}${key.hex()}"
+
+def verify_password(password: str, hashed_str: str) -> bool:
+    """校验密码是否与 PBKDF2 哈希匹配"""
+    try:
+        parts = hashed_str.split("$")
+        if len(parts) != 4 or parts[0] != "pbkdf2_sha256":
+            return False
+        iterations = int(parts[1])
+        salt = parts[2]
+        stored_hex = parts[3]
+        key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+        return hmac.compare_digest(key.hex(), stored_hex)
+    except Exception:
+        return False
+
+async def verify_admin_password(password: str) -> bool:
+    """校验输入的密码：优先从 system_configs 表读取持久化密码哈希，不存在时比对 settings.ADMIN_PASSWORD"""
+    from app.models.db import get_db
+    try:
+        async with get_db() as db:
+            cursor = await db.execute("SELECT value FROM system_configs WHERE key = 'admin_password_hash'")
+            row = await cursor.fetchone()
+            if row and row["value"]:
+                return verify_password(password, row["value"])
+    except Exception:
+        pass
+    # 未设置或数据库无记录时，兼容默认/环境变量密码
+    return hmac.compare_digest(password, settings.ADMIN_PASSWORD)
+
+async def set_admin_password(new_password: str) -> None:
+    """更新管理员密码并持久化至 SQLite"""
+    from app.models.db import get_db
+    hashed = hash_password(new_password)
+    now_iso = time.strftime("%Y-%m-%d %H:%M:%S")
+    async with get_db() as db:
+        await db.execute(
+            """
+            INSERT INTO system_configs (key, value, updated_at) 
+            VALUES ('admin_password_hash', ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+            """,
+            (hashed, now_iso)
+        )
+        await db.commit()
+
 
 def create_admin_token() -> str:
     """基于密钥与时间戳生成防篡改管理 Token"""

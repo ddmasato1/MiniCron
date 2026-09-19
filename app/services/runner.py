@@ -108,6 +108,17 @@ class TaskRunner:
             )
             await db.commit()
 
+        # 加载已启用的全局环境变量
+        global_env_dict = {}
+        try:
+            async with get_db() as db:
+                cursor = await db.execute("SELECT key, value FROM global_env_vars WHERE enabled = 1")
+                rows = await cursor.fetchall()
+                for r in rows:
+                    global_env_dict[str(r["key"])] = str(r["value"])
+        except Exception as e:
+            print(f"[TaskRunner] 读取全局环境变量异常: {e}")
+
         status = "FAILED"
         exit_code = -1
 
@@ -116,8 +127,11 @@ class TaskRunner:
             script_abs_path = validate_script_path(script_rel_path)
 
             # 2. 准备安全环境变量 (强制开启 Python 无缓冲输出)
+            # 合并顺序：基础系统环境 -> 全局环境变量 -> 任务独有环境变量（优先级递增）
             merged_env = os.environ.copy()
             merged_env["PYTHONUNBUFFERED"] = "1"
+            for k, v in global_env_dict.items():
+                merged_env[str(k)] = str(v)
             for k, v in env_vars.items():
                 merged_env[str(k)] = str(v)
 
@@ -132,9 +146,13 @@ class TaskRunner:
             )
 
             # 4. 双向流式写入日志文件与广播
+            injected_keys = list(set(list(global_env_dict.keys()) + list(env_vars.keys())))
+            injected_info = f"=== 已注入环境变量: {', '.join(sorted(injected_keys))} ===\n" if injected_keys else ""
+
             with open(log_abs_path, "w", encoding="utf-8", buffering=1) as log_file:
                 header = f"=== [MiniCron] 任务启动 ID={task_id} 执行流水号={execution_id} ===\n" \
-                         f"=== 脚本: {script_rel_path} | 触发类型: {trigger_type} | 开始时间: {start_iso} ===\n\n"
+                         f"=== 脚本: {script_rel_path} | 触发类型: {trigger_type} | 开始时间: {start_iso} ===\n" \
+                         f"{injected_info}\n"
                 log_file.write(header)
                 await self._broadcast_log(execution_id, header)
 

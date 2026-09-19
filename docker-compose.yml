@@ -1,0 +1,17 @@
+services:
+  minicron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: minicron:latest
+    container_name: minicron
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Asia/Shanghai
+      - ADMIN_PASSWORD=admin123  # 生产环境请修改为强密码
+    volumes:
+      - ./app:/app/app          # 挂载应用代码与静态资源
+      - ./data:/app/data        # 挂载持久化数据库与日志
+      - ./scripts:/app/scripts  # 挂载宿主机 Python 脚本目录
