@@ -26,6 +26,6 @@ data/logs/*
 .vscode/
 *.swp
 
-# Sensitive Custom Scripts
-scripts/smzdm.py
-scripts/tidb.py
+# User Scripts (managed via Web UI, ignored in repository)
+scripts/*
+!scripts/.gitkeep

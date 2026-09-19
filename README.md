@@ -32,8 +32,8 @@ MiniCron/
 │   ├── routers/               # 任务/执行/系统 API 路由
 │   ├── services/              # 任务安全执行器、日志流处理
 │   └── static/                # 现代化 Web 控制台 (SPA)
-├── scripts/                   # 用户定时 Python 脚本存放目录
-│   └── sample_checkin.py      # 示例每日签到脚本
+├── scripts/                   # 用户定时 Python 脚本存放目录 (通过 Web 控制台上传/新建，代码库默认忽略)
+│   └── .gitkeep
 ├── data/                      # 运行时持久化数据 (Git 忽略)
 │   ├── minicron.db            # SQLite 数据库文件 (自动生成)
 │   └── logs/                  # 每次执行的任务日志归档

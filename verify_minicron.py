@@ -21,7 +21,9 @@ async def main():
     print("✅ 目录与配置检查通过")
 
     print("\n=== [2/5] 测试安全沙箱路径防注入校验 ===")
-    # 正常脚本校验
+    sample_script = settings.SCRIPTS_DIR / "sample_checkin.py"
+    if not sample_script.exists():
+        sample_script.write_text("import os\nprint(f'Checkin OK for user {os.getenv(\"CHECKIN_ACCOUNT_ID\", \"test\")}')\n", encoding="utf-8")
     valid_path = validate_script_path("sample_checkin.py")
     print(f"合法脚本解析: {valid_path}")
     assert valid_path.exists(), "脚本文件应存在"
