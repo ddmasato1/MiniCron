@@ -6,6 +6,7 @@ services:
     image: minicron:latest
     container_name: minicron
     restart: unless-stopped
+    network_mode: "bridge"      # 使用默认网桥，固定宿主机网关 172.17.0.1 可用
     ports:
       - "8000:8000"
     environment:
