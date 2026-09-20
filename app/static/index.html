@@ -646,8 +646,8 @@
         </div>
       </div>
 
-      <!-- 脚本代码在线查看抽屉 -->
-      <div v-if="showCodeViewer" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <!-- 脚本代码在线查看抽屉 (z-[60]，高于脚本管理中心 z-50) -->
+      <div v-if="showCodeViewer" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full h-[80vh] flex flex-col shadow-2xl overflow-hidden">
           <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -672,8 +672,8 @@
         </div>
       </div>
 
-      <!-- 脚本在线编辑器模态框 -->
-      <div v-if="showScriptEditorModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <!-- 脚本在线编辑器模态框 (z-[60]，高于脚本管理中心/任务配置弹窗 z-50) -->
+      <div v-if="showScriptEditorModal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl overflow-hidden">
           
           <!-- 编辑器顶部 -->
@@ -1257,8 +1257,8 @@
         </div>
       </div>
 
-      <!-- 添加/编辑环境变量小弹窗 (z-60) -->
-      <div v-if="showEnvFormModal" class="fixed inset-0 z-60 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <!-- 添加/编辑环境变量小弹窗 (z-[60]，高于设置中心 z-50) -->
+      <div v-if="showEnvFormModal" class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
             <h3 class="text-base font-bold text-white">{{ isEditingEnv ? '编辑全局环境变量' : '新增全局环境变量' }}</h3>
@@ -1310,8 +1310,8 @@
         </div>
       </div>
 
-      <!-- 安装新依赖弹窗 (含实时终端日志) (z-60) -->
-      <div v-if="showInstallPackageModal" class="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <!-- 安装新依赖弹窗 (含实时终端日志，z-[60]，高于设置中心 z-50) -->
+      <div v-if="showInstallPackageModal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
           
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
