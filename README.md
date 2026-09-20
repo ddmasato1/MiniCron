@@ -42,6 +42,7 @@ MiniCron/
 ├── docker-compose.yml         # 容器化部署编排 (挂载 data / scripts / app)
 ├── verify_minicron.py         # 端到端全链路自动化测试套件
 ├── .gitignore
+├── CHANGELOG.md                # 规范发版与版本变更日志
 ├── README.md
 └── requirements.txt           # Python 核心依赖清单 (含 requests, pysocks 等)
 ```
@@ -169,4 +170,11 @@ python verify_minicron.py
 ## 🔒 安全最佳实践
 1. **推荐反代**：在公网部署时，建议监听 `127.0.0.1:8000`，外网通过 Nginx 配置 HTTPS 证书并反向代理。
 2. **私有网络**：推荐结合 Tailscale、WireGuard 等私有组网工具访问控制台，不对公网开放 Web 端口。
+
+---
+
+## 📜 发版与更新历史
+详细版本变更历史请参阅 **[CHANGELOG.md](CHANGELOG.md)**。
+* **[v1.1.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.1.0)**：系统安全告警拆分、青龙模式纯净自定义通知、双通道独立测试。
+* **[v1.0.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.0.0)**：MiniCron 首个正式版本发布。
 
