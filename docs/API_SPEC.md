@@ -575,7 +575,12 @@
       "telegram_chat_id": "987654321",
       "proxy_url": "http://127.0.0.1:7890",
       "api_base_url": "https://api.telegram.org",
-      "notify_policy": "ONLY_FAILURE"
+      "notify_policy": "CUSTOM_ONLY",
+      "security_notify_enabled": true,
+      "security_chat_id": "11223344",
+      "notify_on_login_success": false,
+      "notify_on_login_failure": true,
+      "notify_on_password_change": true
     }
   }
   ```
@@ -590,7 +595,12 @@
     "telegram_chat_id": "987654321",
     "proxy_url": "http://127.0.0.1:7890",
     "api_base_url": "https://api.telegram.org",
-    "notify_policy": "ONLY_FAILURE"
+    "notify_policy": "CUSTOM_ONLY",
+    "security_notify_enabled": true,
+    "security_chat_id": "11223344",
+    "notify_on_login_success": false,
+    "notify_on_login_failure": true,
+    "notify_on_password_change": true
   }
   ```
 * **响应示例**：

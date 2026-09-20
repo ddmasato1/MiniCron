@@ -158,12 +158,25 @@ flowchart TD
   * 优先读取 SQLite `system_configs` 中键为 `admin_password_hash` 的记录；
   * 若数据库未配置，则回退兼容环境变量 `ADMIN_PASSWORD` 或默认密码 `admin123`。
 
-### 3.7 结果通知与出海代理转发拓扑 (`app.services.notifier`)
-为了解决国内服务器因防火墙拦截无法直连 Telegram Bot API 的痛点，MiniCron 提供了自适应多路转发架构：
-* **推送策略治理 (`notify_policy`)**：
-  * `ONLY_FAILURE`（默认推荐）：仅在任务返回非 0 退出码或超时强杀时推送，避免日常签到成功消息轰炸；
+### 3.7 通知体系架构与出海代理转发拓扑 (`app.services.notifier`)
+为了兼顾系统安全监控与日常自动化任务的良好体验，MiniCron 提供了安全告警与任务通知独立解耦的自适应通知架构：
+
+* **系统安全事件独立告警 (`notify_security_event`)**：
+  * **解耦设计**：将登录成功/失败（防暴力破解）、管理员密码修改等高危操作与日常定时任务彻底拆分；
+  * **独立推送目标**：共用 Telegram Bot 凭据，但支持为安全通知单独指定 `security_chat_id`（未填写则继承默认 Chat ID），方便管理员将安全告警推送到个人私聊，而将任务通知发到频道或群组；
+  * **细分开关**：默认开启「登录失败告警」（含来源 IP 溯源）与「密码修改提醒」，「登录成功」设为可选开关。
+
+* **任务通知策略治理 (`notify_policy`)**：
+  * `CUSTOM_ONLY`（默认推荐，青龙模式）：仅当脚本显式调用 `notify.send()` 时推送纯净自定义业务内容；若任务异常崩溃（退出码非 0）由系统兜底告警；普通成功任务保持静默；
+  * `ONLY_FAILURE`：仅在任务返回非 0 退出码或超时强杀时推送；
   * `ALWAYS`：无论成功或失败均推送；
-  * `OFF`：关闭推送。
+  * `OFF`：关闭任务推送。
+
+* **青龙模式直观业务通知 vs 系统故障兜底（双轨制推送）**：
+  * **业务通知（青龙直观模式）**：脚本中调用 `notify.send(title, content)` 时，MiniCron 通过标准输出结构化协议（`__MINICRON_NOTIFY_START__...__MINICRON_NOTIFY_END__`）精准捕获，直接向 Telegram 推送纯净的 `【标题】+ 正文` 消息，文末附带轻量标注（`🕒 时间戳 · 任务名`），彻底摒弃耗时、退出代码等机器参数噪音；
+  * **系统故障兜底**：脚本未主动通知但发生异常退出时，发送精简版故障报警卡片，仅提取末尾关键 Traceback / Error 摘要；
+  * **日志自动清洗**：后台控制台查看日志时，自动剥离通知标记块，保证终端日志洁净。
+
 * **国内网络穿透与代理分发方案**：
   * **正向代理 (Forward Proxy)**：
     * 支持 `http://`、`https://`、`socks5://`、`socks5h://` 协议（底层集成 `requests` + `PySocks`）；
@@ -171,16 +184,13 @@ flowchart TD
   * **反向代理 Base URL (Reverse Proxy)**：
     * 支持将官方 `https://api.telegram.org` 替换为自定义反代域名（如 `https://tg-proxy.yourdomain.com` 或 Cloudflare Workers 反代）；
     * 优势：国内服务器**无需安装任何代理客户端**即可稳定推送到 Telegram。
-* **智能业务日志清洗与 HTML 富文本格式化 (`_extract_clean_script_output`)**：
-  * **剥离系统标记**：自动识别并过滤 MiniCron 内部运行标记（`=== [MiniCron] ... ===`、`=== 脚本: ... ===`、`=== 已注入环境变量: ... ===`）以及终端 ANSI 颜色转义符；
-  * **提取业务结果**：无论任务成功还是失败，均从执行日志中提取脚本产生的真实业务输出（如登录用户名、签到积分、业务结论等）；
-  * **尾部关键结论保护**：针对签到脚本核心结论通常位于日志末尾的特点，超长日志自动截取末尾核心行数（最多 35 行 / 2800 字符），前文标注 `... (前文日志已折叠) ...`；
-  * **安全转义**：经过 `html.escape` 安全转义后置入 Telegram `<pre>...</pre>` 块，避免特殊字符导致 Telegram API 解析错误。
+
 * **内置 `notify.py` 兼容垫片 (青龙面板脚本零侵入)**：
   * 在 `scripts/` 目录内置标准 `notify.py` 模块，提供符合规范的 `send(title, content)` 函数；
-  * 脚本运行时工作目录（`cwd`）即为 `scripts/`，因此脚本直接执行 `from notify import send` 即可开箱即用，消除缺文件警告，输出直接打入标准输出由 MiniCron 捕获并推送到 Telegram。
+  * 脚本运行时工作目录（`cwd`）即为 `scripts/`，因此脚本直接执行 `from notify import send` 即可开箱即用，消除缺文件警告，输出结构化标记由 MiniCron 自动捕获。
+
 * **异步非阻塞解耦**：
-  * 任务执行器 `runner.py` 在子进程执行完毕并完成数据库落盘后，通过 `asyncio.create_task` 异步触发通知服务，确保推送网络耗时绝对不会阻塞任务主流程。
+  * 任务执行器 `runner.py` 与认证路由 `auth.py` 在子进程执行完毕或安全事件发生后，通过 `asyncio.create_task` 异步触发通知服务，确保推送网络耗时绝对不会阻塞系统主流程。
 
 ---
 

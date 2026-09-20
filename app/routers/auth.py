@@ -1,16 +1,40 @@
-from fastapi import APIRouter, Response, HTTPException, Depends, status
+import asyncio
+from typing import Optional
+from fastapi import APIRouter, Response, HTTPException, Depends, status, Request
 from app.core.config import settings
 from app.core.security import (
     create_admin_token, get_current_admin, verify_admin_password, set_admin_password
 )
 from app.models.schemas import LoginRequest, ChangePasswordRequest, ApiResponse
+from app.services.notifier import notifier_service
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
+def get_client_ip(request: Optional[Request]) -> str:
+    """获取客户端真实 IP（优先读取代理头）"""
+    if not request:
+        return "127.0.0.1"
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "未知 IP"
+
 @router.post("/login", response_model=ApiResponse)
-async def login(payload: LoginRequest, response: Response):
+async def login(payload: LoginRequest, response: Response, request: Request = None):
     """管理员登录"""
+    client_ip = get_client_ip(request)
     if not await verify_admin_password(payload.password):
+        # 异步触发安全告警 (密码错误)
+        asyncio.create_task(
+            notifier_service.notify_security_event("LOGIN_FAILURE", {
+                "username": "admin",
+                "ip": client_ip,
+                "reason": "密码错误"
+            })
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="密码错误，请核对后重试"
@@ -26,6 +50,14 @@ async def login(payload: LoginRequest, response: Response):
         max_age=max_age,
         httponly=True,
         samesite="lax"
+    )
+
+    # 异步触发安全通知 (登录成功)
+    asyncio.create_task(
+        notifier_service.notify_security_event("LOGIN_SUCCESS", {
+            "username": "admin",
+            "ip": client_ip
+        })
     )
 
     return ApiResponse(
@@ -53,7 +85,11 @@ async def logout(response: Response):
     return ApiResponse(message="已成功退出登录")
 
 @router.post("/change-password", response_model=ApiResponse)
-async def change_password(payload: ChangePasswordRequest, is_admin: bool = Depends(get_current_admin)):
+async def change_password(
+    payload: ChangePasswordRequest,
+    request: Request = None,
+    is_admin: bool = Depends(get_current_admin)
+):
     """修改管理员密码"""
     if not await verify_admin_password(payload.old_password):
         raise HTTPException(
@@ -71,5 +107,14 @@ async def change_password(payload: ChangePasswordRequest, is_admin: bool = Depen
             detail="新密码不能与原密码相同"
         )
     await set_admin_password(payload.new_password)
+
+    client_ip = get_client_ip(request)
+    asyncio.create_task(
+        notifier_service.notify_security_event("PASSWORD_CHANGE", {
+            "username": "admin",
+            "ip": client_ip
+        })
+    )
+
     return ApiResponse(message="密码修改成功，新密码已持久化生效")
 

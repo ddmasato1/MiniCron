@@ -833,12 +833,12 @@
                 <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
               </div>
 
-              <form @submit.prevent="saveNotificationSettings" class="space-y-4 text-xs">
-                <!-- 启用 Telegram 开关 -->
+              <form @submit.prevent="saveNotificationSettings" class="space-y-5 text-xs">
+                <!-- 启用 Telegram 总开关 -->
                 <div class="flex items-center justify-between bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
                   <div>
-                    <span class="font-bold text-white text-sm">启用 Telegram 任务结果推送</span>
-                    <p class="text-slate-400 text-[11px] mt-0.5">任务执行完毕后自动推送结果报告至指定 Telegram 对话或群组</p>
+                    <span class="font-bold text-white text-sm">启用 Telegram 通知服务</span>
+                    <p class="text-slate-400 text-[11px] mt-0.5">开启后支持向 Telegram 发送定时任务执行报告与系统安全关键告警</p>
                   </div>
                   <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" v-model="notifyForm.telegram_enabled" class="sr-only peer">
@@ -855,19 +855,7 @@
                     placeholder="如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
                     class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
                   />
-                  <p class="text-[11px] text-slate-500 mt-1">可在 Telegram 联系 @BotFather 创建机器并获取 Token</p>
-                </div>
-
-                <!-- Chat ID -->
-                <div>
-                  <label class="block font-semibold text-slate-300 mb-1">Telegram 接收者 Chat ID</label>
-                  <input 
-                    v-model="notifyForm.telegram_chat_id" 
-                    type="text" 
-                    placeholder="如: 123456789 或 @my_channel"
-                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
-                  />
-                  <p class="text-[11px] text-slate-500 mt-1">你的个人 Telegram ID，或频道/群组的唯一数字 ID</p>
+                  <p class="text-[11px] text-slate-500 mt-1">可在 Telegram 联系 @BotFather 创建 Bot 并获取 Token（任务与安全告警共用该 Bot）</p>
                 </div>
 
                 <!-- 网络连接模式选择 -->
@@ -945,38 +933,153 @@
                   </div>
                 </div>
 
-                <!-- 通知触发策略 -->
-                <div>
-                  <label class="block font-semibold text-slate-300 mb-1.5">通知触发策略</label>
-                  <div class="grid grid-cols-2 gap-3">
-                    <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'ONLY_FAILURE' ? 'bg-indigo-950/40 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
-                      <input type="radio" value="ONLY_FAILURE" v-model="notifyForm.notify_policy" class="text-indigo-600">
+                <!-- 分割区 1：定时任务执行通知 -->
+                <div class="border border-slate-700/80 bg-slate-900/40 rounded-xl p-4 space-y-3.5">
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-base">🕒</span>
                       <div>
-                        <div class="font-semibold text-xs">仅失败时通知 (推荐)</div>
-                        <div class="text-[10px] text-slate-500">退出码非0或超时才发送，免打扰</div>
+                        <span class="font-bold text-white text-xs">定时任务通知配置</span>
+                        <p class="text-slate-400 text-[10px]">脚本签到结果、日常任务执行状态推送</p>
                       </div>
-                    </label>
-                    <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'ALWAYS' ? 'bg-indigo-950/40 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
-                      <input type="radio" value="ALWAYS" v-model="notifyForm.notify_policy" class="text-indigo-600">
+                    </div>
+                  </div>
+
+                  <!-- 任务 Chat ID -->
+                  <div>
+                    <label class="block font-semibold text-slate-300 mb-1">任务通知接收者 Chat ID</label>
+                    <input 
+                      v-model="notifyForm.telegram_chat_id" 
+                      type="text" 
+                      placeholder="如: 123456789 或 @my_channel"
+                      class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
+                    />
+                    <p class="text-[11px] text-slate-500 mt-1">接收任务执行报告的个人 ID 或频道/群组 ID</p>
+                  </div>
+
+                  <!-- 通知触发策略 -->
+                  <div>
+                    <label class="block font-semibold text-slate-300 mb-1.5">任务通知触发策略</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                      <label class="flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'CUSTOM_ONLY' ? 'bg-sky-950/40 border-sky-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
+                        <input type="radio" value="CUSTOM_ONLY" v-model="notifyForm.notify_policy" class="text-sky-600 mt-0.5">
+                        <div>
+                          <div class="font-semibold text-xs text-sky-300">仅脚本主动通知 (青龙模式)</div>
+                          <div class="text-[10px] text-slate-500">仅当脚本调用 send() 时推送自定义内容；异常失败兜底告警</div>
+                        </div>
+                      </label>
+                      <label class="flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'ONLY_FAILURE' ? 'bg-sky-950/40 border-sky-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
+                        <input type="radio" value="ONLY_FAILURE" v-model="notifyForm.notify_policy" class="text-sky-600 mt-0.5">
+                        <div>
+                          <div class="font-semibold text-xs">仅失败时通知</div>
+                          <div class="text-[10px] text-slate-500">仅当任务退出码非 0 或超时异常时告警</div>
+                        </div>
+                      </label>
+                      <label class="flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'ALWAYS' ? 'bg-sky-950/40 border-sky-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
+                        <input type="radio" value="ALWAYS" v-model="notifyForm.notify_policy" class="text-sky-600 mt-0.5">
+                        <div>
+                          <div class="font-semibold text-xs">每次执行均通知</div>
+                          <div class="text-[10px] text-slate-500">无论成功失败均发送通知</div>
+                        </div>
+                      </label>
+                      <label class="flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'OFF' ? 'bg-sky-950/40 border-sky-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
+                        <input type="radio" value="OFF" v-model="notifyForm.notify_policy" class="text-sky-600 mt-0.5">
+                        <div>
+                          <div class="font-semibold text-xs">完全关闭任务通知</div>
+                          <div class="text-[10px] text-slate-500">不推送任何定时任务结果</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 分割区 2：系统关键安全通知 -->
+                <div class="border border-amber-500/30 bg-amber-950/10 rounded-xl p-4 space-y-3.5">
+                  <div class="flex items-center justify-between border-b border-amber-500/20 pb-2.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-base">🛡️</span>
                       <div>
-                        <div class="font-semibold text-xs">每次执行均通知</div>
-                        <div class="text-[10px] text-slate-500">无论成功或失败均推送提醒</div>
+                        <span class="font-bold text-amber-200 text-xs">系统安全通知配置</span>
+                        <p class="text-slate-400 text-[10px]">管理员登录、密码修改等高危操作独立提醒</p>
                       </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" v-model="notifyForm.security_notify_enabled" class="sr-only peer">
+                      <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
                     </label>
+                  </div>
+
+                  <div v-if="notifyForm.security_notify_enabled" class="space-y-3">
+                    <!-- 安全专属 Chat ID -->
+                    <div>
+                      <label class="block font-semibold text-slate-300 mb-1">
+                        <span>安全告警专属 Chat ID</span>
+                        <span class="text-[10px] text-slate-500 font-normal ml-1.5">(选填，留空则默认发送至上述任务 Chat ID)</span>
+                      </label>
+                      <input 
+                        v-model="notifyForm.security_chat_id" 
+                        type="text" 
+                        placeholder="如个人私聊 ID，留空则共用上方任务 Chat ID"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-amber-500 outline-none"
+                      />
+                      <p class="text-[11px] text-slate-500 mt-1">推荐将安全告警发送至个人私聊，避免将敏感安全信息暴露在任务群组中</p>
+                    </div>
+
+                    <!-- 细分事件开关 -->
+                    <div>
+                      <label class="block font-semibold text-slate-300 mb-1.5">告警事件细分开关</label>
+                      <div class="space-y-2">
+                        <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-800 bg-slate-950/80 cursor-pointer hover:border-slate-700">
+                          <div class="flex items-center gap-2">
+                            <span class="text-rose-400 font-bold">⚠️ 登录失败告警</span>
+                            <span class="text-[10px] text-slate-500">密码错误时触发告警并记录来源 IP (防暴破推荐)</span>
+                          </div>
+                          <input type="checkbox" v-model="notifyForm.notify_on_login_failure" class="rounded text-amber-500 focus:ring-amber-400">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-800 bg-slate-950/80 cursor-pointer hover:border-slate-700">
+                          <div class="flex items-center gap-2">
+                            <span class="text-amber-300 font-bold">🔐 管理员密码修改</span>
+                            <span class="text-[10px] text-slate-500">密码变更后发送凭据更新提醒</span>
+                          </div>
+                          <input type="checkbox" v-model="notifyForm.notify_on_password_change" class="rounded text-amber-500 focus:ring-amber-400">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-800 bg-slate-950/80 cursor-pointer hover:border-slate-700">
+                          <div class="flex items-center gap-2">
+                            <span class="text-emerald-400 font-bold">🔑 登录成功提醒</span>
+                            <span class="text-[10px] text-slate-500">每次成功登录系统均推送通知 (自用频繁可关闭)</span>
+                          </div>
+                          <input type="checkbox" v-model="notifyForm.notify_on_login_success" class="rounded text-amber-500 focus:ring-amber-400">
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <!-- 底部操作按钮 -->
                 <div class="flex items-center justify-between pt-4 border-t border-slate-700">
-                  <button 
-                    type="button" 
-                    @click="testNotificationConnection" 
-                    :disabled="isTestingNotify"
-                    class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-sky-300 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 border border-sky-500/30"
-                  >
-                    <svg class="w-3.5 h-3.5" :class="{'animate-spin': isTestingNotify}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    <span>{{ isTestingNotify ? '正在测试连通性...' : '🧪 发送测试通知' }}</span>
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      @click="testNotificationConnection('task')" 
+                      :disabled="isTestingNotify"
+                      class="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sky-300 font-semibold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 border border-sky-500/30"
+                    >
+                      <svg class="w-3.5 h-3.5" :class="{'animate-spin': isTestingNotify && testingType === 'task'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                      <span>{{ isTestingNotify && testingType === 'task' ? '正在测试...' : '🧪 测试任务通道' }}</span>
+                    </button>
+
+                    <button 
+                      type="button" 
+                      @click="testNotificationConnection('security')" 
+                      :disabled="isTestingNotify"
+                      class="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-300 font-semibold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 border border-amber-500/30"
+                    >
+                      <svg class="w-3.5 h-3.5" :class="{'animate-spin': isTestingNotify && testingType === 'security'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                      <span>{{ isTestingNotify && testingType === 'security' ? '正在测试...' : '🛡️ 测试安全通道' }}</span>
+                    </button>
+                  </div>
 
                   <button 
                     type="submit" 
@@ -1489,9 +1592,15 @@
           telegram_chat_id: "",
           proxy_url: "",
           api_base_url: "https://api.telegram.org",
-          notify_policy: "ONLY_FAILURE"
+          notify_policy: "CUSTOM_ONLY",
+          security_notify_enabled: true,
+          security_chat_id: "",
+          notify_on_login_success: false,
+          notify_on_login_failure: true,
+          notify_on_password_change: true
         });
         const isTestingNotify = ref(false);
+        const testingType = ref('task'); // 'task' | 'security'
         const isSavingNotify = ref(false);
 
         // 全局环境变量
@@ -2348,20 +2457,26 @@
           }
         };
 
-        const testNotificationConnection = async () => {
+        const testNotificationConnection = async (type = 'task') => {
           if (!notifyForm.telegram_bot_token.trim()) {
             alert("请先填写 Telegram Bot Token");
             return;
           }
-          if (!notifyForm.telegram_chat_id.trim()) {
-            alert("请先填写 Telegram Chat ID");
+          const targetChatId = type === 'security'
+            ? (notifyForm.security_chat_id.trim() || notifyForm.telegram_chat_id.trim())
+            : notifyForm.telegram_chat_id.trim();
+          if (!targetChatId) {
+            alert(type === 'security' ? "请先填写任务 Chat ID 或安全专属 Chat ID" : "请先填写任务 Chat ID");
             return;
           }
+          testingType.value = type;
           isTestingNotify.value = true;
           try {
             const testPayload = {
               telegram_bot_token: notifyForm.telegram_bot_token,
               telegram_chat_id: notifyForm.telegram_chat_id,
+              security_chat_id: notifyForm.security_chat_id,
+              test_type: type,
               notify_policy: notifyForm.notify_policy,
               proxy_url: notifyNetworkMode.value === 'PROXY' ? notifyForm.proxy_url : '',
               api_base_url: notifyNetworkMode.value === 'REVERSE_PROXY' ? notifyForm.api_base_url : 'https://api.telegram.org'
@@ -2420,7 +2535,7 @@
           // 统一系统设置中心
           showSettingsModal, activeSettingsTab, openSettingsModal, switchSettingsTab,
           // 系统通知与网络代理
-          showNotificationModal, notifyNetworkMode, notifyForm, isTestingNotify, isSavingNotify,
+          showNotificationModal, notifyNetworkMode, notifyForm, isTestingNotify, testingType, isSavingNotify,
           openNotificationModal, saveNotificationSettings, testNotificationConnection
         };
       }

@@ -114,13 +114,22 @@ class NotificationSettings(BaseModel):
     telegram_chat_id: Optional[str] = Field("", description="Telegram Chat ID")
     proxy_url: Optional[str] = Field("", description="网络代理地址 (如 http://127.0.0.1:7890 或 socks5://127.0.0.1:1080)")
     api_base_url: Optional[str] = Field("https://api.telegram.org", description="Telegram API 基础地址 (支持自建反代域名)")
-    notify_policy: str = Field("ONLY_FAILURE", description="通知策略: ONLY_FAILURE (仅失败), ALWAYS (全部), OFF (关闭)")
+    notify_policy: str = Field("CUSTOM_ONLY", description="任务通知策略: CUSTOM_ONLY (仅脚本主动通知), ONLY_FAILURE (仅失败), ALWAYS (全部), OFF (关闭)")
+    
+    # 系统安全通知配置
+    security_notify_enabled: bool = Field(True, description="是否启用系统安全事件通知")
+    security_chat_id: Optional[str] = Field("", description="安全事件通知独立的 Telegram Chat ID (留空则继承主 Chat ID)")
+    notify_on_login_success: bool = Field(False, description="是否开启登录成功通知")
+    notify_on_login_failure: bool = Field(True, description="是否开启登录失败告警")
+    notify_on_password_change: bool = Field(True, description="是否开启密码修改提醒")
 
 class NotificationTestRequest(BaseModel):
     telegram_bot_token: Optional[str] = None
     telegram_chat_id: Optional[str] = None
     proxy_url: Optional[str] = None
     api_base_url: Optional[str] = None
+    security_chat_id: Optional[str] = None
+    test_type: Optional[str] = Field("task", description="测试类型: task (测试任务通知) 或 security (测试安全告警)")
 
 class ApiResponse(BaseModel):
     code: int = 0
