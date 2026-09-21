@@ -85,10 +85,6 @@
             <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
             <span>内存: <b>{{ sysStatus.memory_usage_mb || '--' }} MB</b></span>
           </div>
-          <div class="flex items-center gap-1.5 bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 rounded-lg">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>时间: <b>{{ sysStatus.server_time || '--' }}</b></span>
-          </div>
         </div>
 
         <div class="flex items-center gap-2">
@@ -1500,6 +1496,59 @@
       </div>
 
     </div>
+
+    <!-- 全局确认框与消息提示，始终位于所有浮层之上 -->
+    <div
+      v-if="confirmDialog.visible"
+      @click.self="closeConfirmDialog"
+      class="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" class="bg-slate-800 border border-rose-500/30 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 shrink-0 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-7.82 13.5A2 2 0 004.2 20h15.6a2 2 0 001.73-3l-7.82-13.5a2 2 0 00-3.42.36z"/></svg>
+          </div>
+          <div class="min-w-0">
+            <h3 id="global-confirm-title" class="text-base font-bold text-white">{{ confirmDialog.title }}</h3>
+            <p class="mt-1.5 text-sm leading-6 text-slate-400">
+              <span v-if="confirmDialog.name" class="font-semibold text-slate-200 break-all">{{ confirmDialog.name }}</span>
+              <span>{{ confirmDialog.description }}</span>
+            </p>
+          </div>
+        </div>
+        <div class="mt-6 flex items-center justify-end gap-2.5">
+          <button
+            @click="closeConfirmDialog"
+            :disabled="isConfirming"
+            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 transition"
+          >取消</button>
+          <button
+            @click="submitConfirmDialog"
+            :disabled="isConfirming"
+            class="min-w-24 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+          >
+            <svg v-if="isConfirming" class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <span>{{ isConfirming ? confirmDialog.processingLabel : confirmDialog.actionLabel }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="toast.visible"
+      class="fixed top-5 right-5 z-[70] max-w-sm w-[calc(100%-2.5rem)]"
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        class="rounded-xl border px-4 py-3 shadow-2xl backdrop-blur flex items-start gap-3"
+        :class="toast.type === 'success' ? 'bg-emerald-950/95 border-emerald-500/40 text-emerald-100' : (toast.type === 'error' ? 'bg-rose-950/95 border-rose-500/40 text-rose-100' : (toast.type === 'warning' ? 'bg-amber-950/95 border-amber-500/40 text-amber-100' : 'bg-sky-950/95 border-sky-500/40 text-sky-100'))"
+      >
+        <span class="text-xs font-bold uppercase tracking-wider shrink-0">{{ toast.type }}</span>
+        <span class="text-sm leading-5 break-words flex-1">{{ toast.message }}</span>
+        <button @click="hideToast" class="text-current/60 hover:text-current text-lg leading-none" aria-label="关闭提示">&times;</button>
+      </div>
+    </div>
   </div>
 
   <!-- Vue 3 核心逻辑 -->
@@ -1512,6 +1561,20 @@
         const loginPassword = ref("");
         const loginLoading = ref(false);
         const loginError = ref("");
+
+        // 全局确认框与非阻断消息提示
+        const confirmDialog = reactive({
+          visible: false,
+          title: "确认执行此操作？",
+          name: "",
+          description: "此操作无法撤销。",
+          actionLabel: "确认删除",
+          processingLabel: "处理中…",
+          action: null
+        });
+        const isConfirming = ref(false);
+        const toast = reactive({ visible: false, type: "info", message: "" });
+        let toastTimer = null;
         
         const tasks = ref([]);
         const scriptsList = ref([]);
@@ -1671,6 +1734,54 @@
             throw new Error("会话已失效，请重新登录");
           }
           return res.json();
+        };
+
+        const showToast = (message, type = "info") => {
+          toast.message = message || "";
+          toast.type = ["success", "error", "info", "warning"].includes(type) ? type : "info";
+          toast.visible = true;
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => {
+            toast.visible = false;
+          }, 3500);
+        };
+
+        const hideToast = () => {
+          clearTimeout(toastTimer);
+          toast.visible = false;
+        };
+
+        const openConfirmDialog = ({ title, name, description, actionLabel = "确认删除", processingLabel = "处理中…", action }) => {
+          Object.assign(confirmDialog, {
+            visible: true,
+            title,
+            name,
+            description,
+            actionLabel,
+            processingLabel,
+            action
+          });
+          isConfirming.value = false;
+        };
+
+        const closeConfirmDialog = () => {
+          if (isConfirming.value) return;
+          confirmDialog.visible = false;
+          confirmDialog.action = null;
+        };
+
+        const submitConfirmDialog = async () => {
+          if (!confirmDialog.visible || isConfirming.value || typeof confirmDialog.action !== "function") return;
+          isConfirming.value = true;
+          try {
+            await confirmDialog.action();
+            confirmDialog.visible = false;
+            confirmDialog.action = null;
+          } catch (e) {
+            showToast(e.message || "操作失败", "error");
+          } finally {
+            isConfirming.value = false;
+          }
         };
 
         // 检查登录状态
@@ -1834,10 +1945,18 @@
           await fetchTasks();
         };
 
-        const deleteTask = async (task) => {
-          if (!confirm(`确定要删除任务【${task.name}】吗？`)) return;
-          await apiRequest(`/api/tasks/${task.id}`, { method: "DELETE" });
-          await fetchTasks();
+        const deleteTask = (task) => {
+          openConfirmDialog({
+            title: "删除定时任务？",
+            name: task.name,
+            description: "将被永久删除，此操作无法撤销。",
+            processingLabel: "删除中…",
+            action: async () => {
+              await apiRequest(`/api/tasks/${task.id}`, { method: "DELETE" });
+              await fetchTasks();
+              showToast("定时任务已删除", "success");
+            }
+          });
         };
 
         // 立即手动触发
@@ -1849,7 +1968,7 @@
               viewTaskLogs(task, res.data.execution_id);
             }
           } catch (e) {
-            alert(e.message || "触发任务失败");
+            showToast(e.message || "触发任务失败", "error");
           }
         };
 
@@ -1914,7 +2033,7 @@
 
         const copyLogs = () => {
           navigator.clipboard.writeText(currentLogContent.value);
-          alert("日志内容已复制到剪贴板");
+          showToast("日志内容已复制到剪贴板", "success");
         };
 
         // 脚本中心操作
@@ -1926,11 +2045,11 @@
 
         const submitPasteScript = async () => {
           if (!pasteForm.filename.trim()) {
-            alert("请输入脚本文件名");
+            showToast("请输入脚本文件名", "warning");
             return;
           }
           if (!pasteForm.content.trim()) {
-            alert("请输入或粘贴脚本源码内容");
+            showToast("请输入或粘贴脚本源码内容", "warning");
             return;
           }
           isSavingScript.value = true;
@@ -1940,7 +2059,7 @@
               body: JSON.stringify(pasteForm)
             });
             if (res.code === 0) {
-              alert(res.message);
+              showToast(res.message || "脚本保存成功", "success");
               // 如果在新建任务界面，自动选中使用刚保存的脚本
               if (showTaskModal.value) {
                 currentForm.script_path = res.data.relative_path;
@@ -1950,10 +2069,10 @@
               await fetchScripts();
               scriptTab.value = "list";
             } else {
-              alert(res.detail || res.message || "保存失败");
+              showToast(res.detail || res.message || "保存失败", "error");
             }
           } catch (e) {
-            alert(e.message || "网络请求失败");
+            showToast(e.message || "网络请求失败", "error");
           } finally {
             isSavingScript.value = false;
           }
@@ -1963,7 +2082,7 @@
           const file = e.target.files[0];
           if (file) {
             if (!file.name.endsWith(".py")) {
-              alert("仅支持上传 .py 文件");
+              showToast("仅支持上传 .py 文件", "warning");
               e.target.value = "";
               return;
             }
@@ -1989,7 +2108,7 @@
             });
             const data = await res.json();
             if (data.code === 0) {
-              alert(data.message);
+              showToast(data.message || "脚本上传成功", "success");
               if (showTaskModal.value) {
                 currentForm.script_path = data.data.relative_path;
               }
@@ -1997,30 +2116,30 @@
               await fetchScripts();
               scriptTab.value = "list";
             } else {
-              alert(data.detail || data.message || "上传失败");
+              showToast(data.detail || data.message || "上传失败", "error");
             }
           } catch (e) {
-            alert(e.message || "网络请求失败");
+            showToast(e.message || "网络请求失败", "error");
           } finally {
             isUploadingScript.value = false;
           }
         };
 
         const deleteScript = async (path) => {
-          if (!confirm(`确定要从 scripts 目录删除脚本【${path}】吗？`)) return;
-          try {
-            const res = await apiRequest(`/api/scripts?path=${encodeURIComponent(path)}`, {
-              method: "DELETE"
-            });
-            if (res.code === 0) {
-              alert(res.message);
+          openConfirmDialog({
+            title: "删除脚本？",
+            name: path,
+            description: "将从 scripts 目录永久删除，此操作无法撤销。",
+            processingLabel: "删除中…",
+            action: async () => {
+              const res = await apiRequest(`/api/scripts?path=${encodeURIComponent(path)}`, {
+                method: "DELETE"
+              });
+              if (res.code !== 0) throw new Error(res.detail || res.message || "删除失败");
               await fetchScripts();
-            } else {
-              alert(res.detail || res.message || "删除失败");
+              showToast(res.message || "脚本已删除", "success");
             }
-          } catch (e) {
-            alert(e.message || "删除请求失败");
-          }
+          });
         };
 
         const viewScriptCode = async (path) => {
@@ -2032,13 +2151,13 @@
               showCodeViewer.value = true;
             }
           } catch (e) {
-            alert(e.message || "读取脚本代码失败");
+            showToast(e.message || "读取脚本代码失败", "error");
           }
         };
 
         const copyCode = (code) => {
           navigator.clipboard.writeText(code);
-          alert("代码已复制到剪贴板");
+          showToast("代码已复制到剪贴板", "success");
         };
 
         // 密码修改方法
@@ -2098,10 +2217,10 @@
               editorSaveSuccess.value = false;
               showScriptEditorModal.value = true;
             } else {
-              alert(res.detail || "读取脚本内容失败");
+              showToast(res.detail || "读取脚本内容失败", "error");
             }
           } catch (e) {
-            alert(e.message || "读取脚本内容异常");
+            showToast(e.message || "读取脚本内容异常", "error");
           }
         };
 
@@ -2129,10 +2248,10 @@
                 editorSaveSuccess.value = false;
               }, 3000);
             } else {
-              alert(res.detail || res.message || "保存脚本失败");
+              showToast(res.detail || res.message || "保存脚本失败", "error");
             }
           } catch (e) {
-            alert(e.message || "保存脚本异常");
+            showToast(e.message || "保存脚本异常", "error");
           } finally {
             isSavingEditor.value = false;
           }
@@ -2218,7 +2337,7 @@
                 showEnvFormModal.value = false;
                 await fetchEnvVars();
               } else {
-                alert(res.detail || res.message || "更新失败");
+                showToast(res.detail || res.message || "更新失败", "error");
               }
             } else {
               const res = await apiRequest("/api/env-vars", {
@@ -2229,11 +2348,11 @@
                 showEnvFormModal.value = false;
                 await fetchEnvVars();
               } else {
-                alert(res.detail || res.message || "创建失败");
+                showToast(res.detail || res.message || "创建失败", "error");
               }
             }
           } catch (e) {
-            alert(e.message || "保存环境变量失败");
+            showToast(e.message || "保存环境变量失败", "error");
           }
         };
 
@@ -2246,27 +2365,28 @@
             if (res.code === 0) {
               await fetchEnvVars();
             } else {
-              alert(res.detail || res.message || "状态更新失败");
+              showToast(res.detail || res.message || "状态更新失败", "error");
             }
           } catch (e) {
-            alert(e.message || "请求失败");
+            showToast(e.message || "请求失败", "error");
           }
         };
 
         const deleteEnvVar = async (item) => {
-          if (!confirm(`确定要删除环境变量【${item.key}】吗？`)) return;
-          try {
-            const res = await apiRequest(`/api/env-vars/${item.id}`, {
-              method: "DELETE"
-            });
-            if (res.code === 0) {
+          openConfirmDialog({
+            title: "删除环境变量？",
+            name: item.key,
+            description: "将被永久删除，此操作无法撤销。",
+            processingLabel: "删除中…",
+            action: async () => {
+              const res = await apiRequest(`/api/env-vars/${item.id}`, {
+                method: "DELETE"
+              });
+              if (res.code !== 0) throw new Error(res.detail || res.message || "删除失败");
               await fetchEnvVars();
-            } else {
-              alert(res.detail || res.message || "删除失败");
+              showToast("环境变量已删除", "success");
             }
-          } catch (e) {
-            alert(e.message || "删除请求失败");
-          }
+          });
         };
 
         // Python 依赖管理方法
@@ -2367,21 +2487,22 @@
         };
 
         const uninstallPackage = async (pkg) => {
-          if (!confirm(`确定要卸载 Python 模块【${pkg.name}】吗？`)) return;
-          try {
-            const res = await apiRequest("/api/packages/uninstall", {
-              method: "POST",
-              body: JSON.stringify({ name: pkg.name })
-            });
-            if (res.code === 0) {
-              alert(res.message);
+          openConfirmDialog({
+            title: "卸载 Python 模块？",
+            name: pkg.name,
+            description: "将从当前运行环境卸载，相关脚本可能无法运行。",
+            actionLabel: "确认卸载",
+            processingLabel: "卸载中…",
+            action: async () => {
+              const res = await apiRequest("/api/packages/uninstall", {
+                method: "POST",
+                body: JSON.stringify({ name: pkg.name })
+              });
+              if (res.code !== 0) throw new Error(res.detail || res.message || "卸载失败");
               await fetchPackages();
-            } else {
-              alert(res.detail || res.message || "卸载失败");
+              showToast(res.message || "Python 模块已卸载", "success");
             }
-          } catch (e) {
-            alert(e.message || "卸载请求异常");
-          }
+          });
         };
 
         // 统一系统设置中心
@@ -2446,12 +2567,12 @@
               body: JSON.stringify(payload)
             });
             if (res.code === 0) {
-              alert("通知与代理配置已成功保存！");
+              showToast("通知与代理配置已成功保存！", "success");
             } else {
-              alert(res.message || "保存失败");
+              showToast(res.message || "保存失败", "error");
             }
           } catch (e) {
-            alert(e.message || "网络请求异常");
+            showToast(e.message || "网络请求异常", "error");
           } finally {
             isSavingNotify.value = false;
           }
@@ -2459,14 +2580,14 @@
 
         const testNotificationConnection = async (type = 'task') => {
           if (!notifyForm.telegram_bot_token.trim()) {
-            alert("请先填写 Telegram Bot Token");
+            showToast("请先填写 Telegram Bot Token", "warning");
             return;
           }
           const targetChatId = type === 'security'
             ? (notifyForm.security_chat_id.trim() || notifyForm.telegram_chat_id.trim())
             : notifyForm.telegram_chat_id.trim();
           if (!targetChatId) {
-            alert(type === 'security' ? "请先填写任务 Chat ID 或安全专属 Chat ID" : "请先填写任务 Chat ID");
+            showToast(type === 'security' ? "请先填写任务 Chat ID 或安全专属 Chat ID" : "请先填写任务 Chat ID", "warning");
             return;
           }
           testingType.value = type;
@@ -2486,12 +2607,12 @@
               body: JSON.stringify(testPayload)
             });
             if (res.code === 0) {
-              alert(res.message || "测试消息已成功送达！");
+              showToast(res.message || "测试消息已成功送达！", "success");
             } else {
-              alert("测试发送失败：\n" + (res.message || "未知错误"));
+              showToast("测试发送失败：\n" + (res.message || "未知错误"), "error");
             }
           } catch (e) {
-            alert("请求异常: " + e.message);
+            showToast("请求异常: " + e.message, "error");
           } finally {
             isTestingNotify.value = false;
           }
@@ -2511,6 +2632,8 @@
           tasks, scriptsList, sysStatus, isRefreshing, fetchTasks,
           showTaskModal, isEditing, currentForm, envRows, addEnvRow, removeEnvRow,
           saveTask, toggleTask, deleteTask, openCreateModal, openEditModal,
+          confirmDialog, isConfirming, openConfirmDialog, closeConfirmDialog, submitConfirmDialog,
+          toast, showToast, hideToast,
           cronPreviewRuns, cronPreviewValid, onCronChange,
           showLogModal, activeLogTask, executionsList, selectedExecutionId, currentLogContent,
           isLogStreaming, viewTaskLogs, selectExecution, closeLogModal, copyLogs, runTaskNow,
