@@ -196,20 +196,25 @@ class TaskRunner:
         finally:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
+
+            # 先更新最终执行状态并持久化，确保后续任何状态查询获取到的都是最新快照
+            try:
+                async with get_db() as db:
+                    await db.execute(
+                        """
+                        UPDATE task_executions 
+                        SET status = ?, exit_code = ?, end_time = ?, duration_seconds = ?
+                        WHERE id = ?
+                        """,
+                        (status, exit_code, end_time.isoformat(), duration, execution_id)
+                    )
+                    await db.commit()
+            except Exception as e:
+                print(f"[TaskRunner] 更新执行状态到数据库失败: {e}")
+
+            # 清理运行状态并关闭实时日志流
             self._running_tasks.discard(task_id)
             await self._close_log_stream(execution_id)
-
-            # 更新最终执行状态
-            async with get_db() as db:
-                await db.execute(
-                    """
-                    UPDATE task_executions 
-                    SET status = ?, exit_code = ?, end_time = ?, duration_seconds = ?
-                    WHERE id = ?
-                    """,
-                    (status, exit_code, end_time.isoformat(), duration, execution_id)
-                )
-                await db.commit()
 
             # 异步触发结果通知 (不阻塞主流程)
             try:

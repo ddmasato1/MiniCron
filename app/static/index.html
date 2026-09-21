@@ -2006,18 +2006,24 @@
             if (res.data.status === "RUNNING") {
               isLogStreaming.value = true;
               sseSource = new EventSource(`/api/executions/${exec.id}/stream`);
-              sseSource.onmessage = (event) => {
+              sseSource.onmessage = async (event) => {
                 const msg = JSON.parse(event.data);
                 if (msg.finished) {
                   isLogStreaming.value = false;
                   sseSource.close();
-                  fetchTasks();
+                  sseSource = null;
+                  await fetchTasks();
+                  if (activeLogTask.value) {
+                    const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
+                    if (execRes.code === 0) executionsList.value = execRes.data;
+                  }
                 } else {
                   currentLogContent.value += msg.line;
                 }
               };
             } else {
               isLogStreaming.value = false;
+              fetchTasks();
             }
           }
         };
@@ -2029,6 +2035,7 @@
             sseSource = null;
           }
           isLogStreaming.value = false;
+          fetchTasks();
         };
 
         const copyLogs = () => {
@@ -2620,11 +2627,20 @@
 
         onMounted(() => {
           checkAuth();
+          // 定时轮询：常规每 10 秒同步系统状态与任务列表
           setInterval(() => {
             if (isAuthenticated.value) {
               fetchSystemStatus();
+              fetchTasks();
             }
           }, 10000);
+
+          // 自适应短轮询：若存在运行中的任务，每 2 秒同步一次状态直至完成
+          setInterval(() => {
+            if (isAuthenticated.value && tasks.value.some(t => t.is_running)) {
+              fetchTasks();
+            }
+          }, 2000);
         });
 
         return {
