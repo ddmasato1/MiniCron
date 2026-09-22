@@ -23,6 +23,13 @@ class TaskRunner:
 
     async def subscribe_log(self, execution_id: str) -> AsyncGenerator[str, None]:
         """订阅正在运行任务的实时输出日志"""
+        # 先行检查：若该执行记录已在数据库中结束，直接退出，防止连接挂起
+        async with get_db() as db:
+            cursor = await db.execute("SELECT status FROM task_executions WHERE id = ?", (execution_id,))
+            row = await cursor.fetchone()
+            if row and row["status"] != "RUNNING":
+                return
+
         q = asyncio.Queue()
         if execution_id not in self._log_subscribers:
             self._log_subscribers[execution_id] = []

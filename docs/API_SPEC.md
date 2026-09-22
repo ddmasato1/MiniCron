@@ -367,6 +367,21 @@
   }
   ```
 
+### 5.8 获取系统配置与使用指南 Markdown
+* **路径**：`GET /api/system/help`
+* **鉴权**：需要 Bearer Token
+* **功能**：自适应读取并返回 `docs/help.md` 的 Markdown 原始内容，供前端控制台内置帮助模态框渲染。
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "content": "# MiniCron 配置与使用指南 (Help & FAQ) 📖\n\n..."
+    }
+  }
+  ```
+
 ---
 
 ## 6. 全局环境变量接口 (Global Environment Variables)

@@ -17,9 +17,9 @@
     .term-scroll::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
 
     /* 暗色 Markdown 渲染样式 */
-    .markdown-body h1 { font-size: 1.4rem; font-weight: 800; color: #f8fafc; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
-    .markdown-body h2 { font-size: 1.2rem; font-weight: 700; color: #38bdf8; margin-top: 1.25rem; margin-bottom: 0.5rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.25rem; }
-    .markdown-body h3 { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin-top: 1rem; margin-bottom: 0.4rem; }
+    .markdown-body h1 { font-size: 1.4rem; font-weight: 800; color: #f8fafc; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; scroll-margin-top: 1.5rem; }
+    .markdown-body h2 { font-size: 1.2rem; font-weight: 700; color: #38bdf8; margin-top: 1.25rem; margin-bottom: 0.5rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.25rem; scroll-margin-top: 1.5rem; }
+    .markdown-body h3 { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin-top: 1rem; margin-bottom: 0.4rem; scroll-margin-top: 1.5rem; }
     .markdown-body p { margin-top: 0.4rem; margin-bottom: 0.75rem; line-height: 1.6; color: #cbd5e1; font-size: 0.85rem; }
     .markdown-body ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; font-size: 0.85rem; color: #cbd5e1; }
     .markdown-body ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; font-size: 0.85rem; color: #cbd5e1; }
@@ -452,6 +452,17 @@
               </span>
             </div>
             <div class="flex items-center gap-2">
+              <button 
+                @click="runTaskNow(activeLogTask)" 
+                :disabled="isCurrentTaskRunning"
+                :class="isCurrentTaskRunning ? 'opacity-50 cursor-not-allowed bg-indigo-600/50 text-indigo-200' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow shadow-indigo-600/20'"
+                class="text-xs font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+                title="立即手动触发该任务并实时跟踪最新日志"
+              >
+                <svg v-if="isCurrentTaskRunning" class="animate-spin w-3 h-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <svg v-else class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+                <span>{{ isCurrentTaskRunning ? '执行中...' : '立即运行' }}</span>
+              </button>
               <button @click="copyLogs" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg transition">复制日志</button>
               <button @click="closeLogModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
             </div>
@@ -1599,7 +1610,7 @@
         </div>
 
         <!-- 弹窗内容区 (渲染 Markdown) -->
-        <div class="flex-1 overflow-y-auto term-scroll p-6 bg-slate-900/60">
+        <div id="helpModalBody" @click="handleHelpDocClick" class="flex-1 overflow-y-auto term-scroll p-6 bg-slate-900/60">
           <div v-if="isHelpLoading" class="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
             <svg class="animate-spin h-6 w-6 text-emerald-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
             <span class="text-xs font-mono">正在加载帮助文档...</span>
@@ -1728,6 +1739,12 @@
         const isLogStreaming = ref(false);
         let sseSource = null;
 
+        const isCurrentTaskRunning = computed(() => {
+          if (!activeLogTask.value) return false;
+          const t = tasks.value.find(item => item.id === activeLogTask.value.id);
+          return t ? Boolean(t.is_running) : false;
+        });
+
         // 脚本中心模态框
         const showScriptModal = ref(false);
         const scriptTab = ref("list"); // 'list' | 'paste' | 'upload'
@@ -1855,6 +1872,16 @@
             isAuthenticated.value = false;
             localStorage.removeItem("minicron_token");
             throw new Error("会话已失效，请重新登录");
+          }
+          if (!res.ok) {
+            let errorText = "";
+            try {
+              const errJson = await res.json();
+              errorText = errJson.detail || errJson.message || JSON.stringify(errJson);
+            } catch (_) {
+              errorText = await res.text();
+            }
+            throw new Error(errorText || `HTTP ${res.status}: 请求失败`);
           }
           return res.json();
         };
@@ -2088,7 +2115,7 @@
             const res = await apiRequest(`/api/tasks/${task.id}/run`, { method: "POST" });
             if (res.code === 0) {
               await fetchTasks();
-              viewTaskLogs(task, res.data.execution_id);
+              await viewTaskLogs(task, res.data.execution_id);
             }
           } catch (e) {
             showToast(e.message || "触发任务失败", "error");
@@ -2106,7 +2133,7 @@
             executionsList.value = res.data;
             const chosenId = targetExecutionId || (executionsList.value[0]?.id);
             if (chosenId) {
-              selectExecution({ id: chosenId });
+              await selectExecution({ id: chosenId });
             } else {
               currentLogContent.value = "（该任务尚无历史执行记录）";
             }
@@ -2126,27 +2153,49 @@
           if (res.code === 0) {
             currentLogContent.value = res.data.content;
             
+            // 立即同步更新 executionsList 中当前项的真实状态
+            const currentItem = executionsList.value.find(item => item.id === exec.id);
+            if (currentItem && res.data.status) {
+              currentItem.status = res.data.status;
+            }
+
             if (res.data.status === "RUNNING") {
               isLogStreaming.value = true;
               sseSource = new EventSource(`/api/executions/${exec.id}/stream`);
               sseSource.onmessage = async (event) => {
-                const msg = JSON.parse(event.data);
-                if (msg.finished) {
-                  isLogStreaming.value = false;
+                try {
+                  const msg = JSON.parse(event.data);
+                  if (msg.finished) {
+                    isLogStreaming.value = false;
+                    if (sseSource) {
+                      sseSource.close();
+                      sseSource = null;
+                    }
+                    await fetchTasks();
+                    if (activeLogTask.value) {
+                      const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
+                      if (execRes.code === 0) executionsList.value = execRes.data;
+                    }
+                  } else {
+                    currentLogContent.value += msg.line;
+                  }
+                } catch (_) {}
+              };
+              sseSource.onerror = async () => {
+                if (sseSource) {
                   sseSource.close();
                   sseSource = null;
-                  await fetchTasks();
-                  if (activeLogTask.value) {
-                    const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
-                    if (execRes.code === 0) executionsList.value = execRes.data;
-                  }
-                } else {
-                  currentLogContent.value += msg.line;
+                }
+                isLogStreaming.value = false;
+                await fetchTasks();
+                if (activeLogTask.value) {
+                  const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
+                  if (execRes.code === 0) executionsList.value = execRes.data;
                 }
               };
             } else {
               isLogStreaming.value = false;
-              fetchTasks();
+              await fetchTasks();
             }
           }
         };
@@ -2753,6 +2802,52 @@
         const helpContentHtml = ref("");
         const isHelpLoading = ref(false);
 
+        const generateHeadingId = (text) => {
+          return (text || "")
+            .toLowerCase()
+            .trim()
+            .replace(/<[^>]+>/g, "")
+            .replace(/[^\w\u4e00-\u9fa5\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        };
+
+        const setupHelpDocHeadings = () => {
+          const container = document.getElementById("helpModalBody");
+          if (!container) return;
+          const headings = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
+          headings.forEach(h => {
+            const id = generateHeadingId(h.textContent || "");
+            if (id) {
+              h.id = id;
+            }
+          });
+        };
+
+        const handleHelpDocClick = (e) => {
+          const link = e.target.closest("a");
+          if (!link) return;
+          const href = link.getAttribute("href");
+          if (href && href.startsWith("#")) {
+            e.preventDefault();
+            const targetId = decodeURIComponent(href.slice(1));
+            const scrollContainer = document.getElementById("helpModalBody");
+            if (!scrollContainer) return;
+            try {
+              const targetEl = scrollContainer.querySelector(`[id="${CSS.escape(targetId)}"]`) || document.getElementById(targetId);
+              if (targetEl) {
+                targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            } catch (_) {
+              const targetEl = document.getElementById(targetId);
+              if (targetEl) {
+                targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }
+          }
+        };
+
         const fetchHelpContent = async () => {
           if (helpContentHtml.value) return; // 避免重复拉取
           isHelpLoading.value = true;
@@ -2766,6 +2861,8 @@
                 // 降级纯文本呈现
                 helpContentHtml.value = `<pre class="whitespace-pre-wrap font-sans text-xs text-slate-300 leading-relaxed">${rawMd}</pre>`;
               }
+              await nextTick();
+              setupHelpDocHeadings();
             } else {
               helpContentHtml.value = `<p class="text-rose-400">加载帮助文档失败: ${res.message || '未知错误'}</p>`;
             }
@@ -2779,6 +2876,8 @@
         const openHelpModal = async () => {
           showHelpModal.value = true;
           await fetchHelpContent();
+          await nextTick();
+          setupHelpDocHeadings();
         };
 
         onMounted(() => {
@@ -2791,10 +2890,24 @@
             }
           }, 10000);
 
-          // 自适应短轮询：若存在运行中的任务，每 2 秒同步一次状态直至完成
-          setInterval(() => {
-            if (isAuthenticated.value && tasks.value.some(t => t.is_running)) {
-              fetchTasks();
+          // 自适应短轮询：若存在运行中的任务或正在流式监听日志，每 2 秒同步一次状态直至完成
+          setInterval(async () => {
+            if (isAuthenticated.value && (tasks.value.some(t => t.is_running) || isLogStreaming.value)) {
+              await fetchTasks();
+              if (showLogModal.value && activeLogTask.value) {
+                const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
+                if (execRes.code === 0) {
+                  executionsList.value = execRes.data;
+                  const cur = executionsList.value.find(item => item.id === selectedExecutionId.value);
+                  if (cur && cur.status !== 'RUNNING' && isLogStreaming.value) {
+                    isLogStreaming.value = false;
+                    if (sseSource) {
+                      sseSource.close();
+                      sseSource = null;
+                    }
+                  }
+                }
+              }
             }
           }, 2000);
         });
@@ -2808,7 +2921,7 @@
           toast, showToast, hideToast,
           cronPreviewRuns, cronPreviewValid, onCronChange,
           showLogModal, activeLogTask, executionsList, selectedExecutionId, currentLogContent,
-          isLogStreaming, viewTaskLogs, selectExecution, closeLogModal, copyLogs, runTaskNow,
+          isLogStreaming, isCurrentTaskRunning, viewTaskLogs, selectExecution, closeLogModal, copyLogs, runTaskNow,
           showScriptModal, openScriptModal, scriptTab, pasteForm, isSavingScript, submitPasteScript,
           selectedFile, uploadOverwrite, isUploadingScript, handleFileSelected, submitUploadScript,
           deleteScript, showCodeViewer, viewingPath, viewingCode, viewScriptCode, copyCode,
@@ -2833,7 +2946,7 @@
           showNotificationModal, notifyNetworkMode, notifyForm, isTestingNotify, testingType, isSavingNotify,
           openNotificationModal, saveNotificationSettings, testNotificationConnection,
           // 使用与配置指南
-          showHelpModal, helpContentHtml, isHelpLoading, openHelpModal, fetchHelpContent
+          showHelpModal, helpContentHtml, isHelpLoading, openHelpModal, fetchHelpContent, handleHelpDocClick
         };
       }
     }).mount("#app");
