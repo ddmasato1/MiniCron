@@ -7,8 +7,8 @@
 * **协议与基础路径**：`HTTP/1.1` 或 `HTTP/2`，所有接口均以 `/api` 为前缀。
 * **数据交换格式**：统一采用 `application/json`，字符编码为 `UTF-8`。
 * **认证方式**：
-  * 请求 Header 中携带：`Authorization: Bearer <ADMIN_TOKEN>`
-  * 或通过 HTTP-Only Cookie: `minicron_token=<ADMIN_TOKEN>`
+  * 登录成功后取得会话 Token，请求 Header 中携带：`Authorization: Bearer <SESSION_TOKEN>`
+  * 或通过 HTTP-Only Cookie: `minicron_token=<SESSION_TOKEN>`
 * **统一响应体包装**：
   ```json
   {
@@ -39,7 +39,7 @@
     "message": "登录成功",
     "data": {
       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "expire_at": "2026-09-26T23:59:59Z"
+      "expires_in": 604800
     }
   }
   ```
@@ -53,12 +53,23 @@
     "message": "success",
     "data": {
       "authenticated": true,
-      "role": "admin"
+      "username": "admin"
     }
   }
   ```
 
-### 2.3 修改管理员密码
+### 2.3 注销会话
+* **路径**：`POST /api/auth/logout`
+* **鉴权要求**：无需鉴权 (公开)
+* **响应示例**：
+  ```json
+  {
+    "code": 0,
+    "message": "已成功退出登录"
+  }
+  ```
+
+### 2.4 修改管理员密码
 * **路径**：`POST /api/auth/change-password`
 * **鉴权要求**：需登录鉴权 (`Bearer Token` 或 `Cookie`)
 * **请求体 (JSON)**：
@@ -234,6 +245,17 @@
       "content": "[2026-09-19 08:00:01] 开始执行日常签到任务...\n当前签到账号: user_001\n正在连接签到服务...\n今日签到成功！获得积分: 10点。\n[2026-09-19 08:00:03] 任务执行完成。\n"
     }
   }
+  ```
+
+### 4.3 实时获取执行日志 (SSE)
+* **路径**：`GET /api/executions/{execution_id}/stream`
+* **响应类型**：`text/event-stream`
+* **说明**：订阅指定执行记录的实时日志。任务结束后返回 `finished: true` 事件并关闭流。
+* **事件示例**：
+  ```text
+  data: {"line": "开始执行任务...\n"}
+
+  data: {"line": "", "finished": true}
   ```
 
 ---
@@ -634,10 +656,13 @@
   {
     "telegram_bot_token": "123456:ABC-DEF...",
     "telegram_chat_id": "987654321",
+    "security_chat_id": "11223344",
+    "test_type": "task",
     "proxy_url": "socks5://127.0.0.1:1080",
     "api_base_url": "https://api.telegram.org"
   }
   ```
+* `test_type` 可选值为 `task`（测试任务通知，使用 `telegram_chat_id`）或 `security`（测试安全告警，优先使用 `security_chat_id`，未填写时回退至任务 Chat ID）。
 * **成功响应**：
   ```json
   {
@@ -652,5 +677,4 @@
     "message": "代理连接失败，请检查代理地址是否可用或端口是否正确: ..."
   }
   ```
-
 

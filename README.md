@@ -3,6 +3,32 @@
 > **超轻量、高安全、极简易用的 Python 定时任务可视化管理系统**  
 > 专为个人日常签到、数据抓取等小型定时脚本打造，彻底替代臃肿且存在安全隐患的传统面板。
 
+![MiniCron 任务调度控制台](docs/images/1.png)
+
+---
+
+## 🖼️ 界面预览
+
+### 脚本管理
+
+![MiniCron 脚本管理中心](docs/images/2.png)
+
+### 通知与代理
+
+![MiniCron 通知与代理设置](docs/images/3.png)
+
+### 全局环境变量
+
+![MiniCron 全局环境变量管理](docs/images/4.png)
+
+### Python 依赖管理
+
+![MiniCron Python 依赖与模块管理](docs/images/5.png)
+
+### 内置配置与使用指南
+
+![MiniCron 配置与使用指南](docs/images/6.png)
+
 ---
 
 ## 💡 为什么选择 MiniCron？
@@ -10,7 +36,7 @@
 很多开发者在小型 Linux 服务器或 NAS 上仅需定时运行 3~5 个 Python 签到或自动化脚本。过去常使用的**青龙面板**等传统工具多为重型设计，内存开销动辄 500MB~1.5GB，且历史安全隐患较多。
 
 **MiniCron** 专为替代这类重型面板而生，采用极简设计理念：
-* ⚡ **超低开销**：单 Python 进程托管 Web 与调度，内存占用 **< 50MB**。
+* ⚡ **超低开销**：单 Python 进程托管 Web 与调度，常规内存占用通常低于 **100MB**（实际占用取决于任务与依赖）。
 * 🛡️ **安全防注入**：禁用一切系统 Shell 拼接执行，白名单隔离脚本路径，杜绝 RCE 与目录穿越。
 * 🎯 **开箱即用**：内置 SQLite 与免编译现代化 Web UI，单个端口搞定所有服务，零中间件依赖。
 
@@ -24,13 +50,15 @@ MiniCron/
 │   ├── PRD.md                 # 产品需求规格说明书
 │   ├── ARCHITECTURE.md        # 系统架构设计方案 (含 Mermaid 拓扑与 E-R 图)
 │   ├── API_SPEC.md            # RESTful API 接口规范
-│   └── help.md                # 用户配置与使用指南 (FAQ、通知接入、Cron速查)
+│   ├── help.md                # 用户配置与使用指南 (FAQ、通知接入、Cron速查)
+│   └── images/                 # README 界面预览截图
 ├── app/                       # 核心业务源码 (FastAPI)
 │   ├── core/                  # 配置管理、APScheduler 调度生命周期、PBKDF2 安全鉴权
 │   ├── models/                # SQLite 数据模型与 Pydantic 契约
 │   ├── routers/               # 任务/执行/系统/环境/依赖/通知设置 API 路由
 │   ├── services/              # 任务安全执行器、日志流处理、依赖包管理器、Telegram 通知推送
 │   └── static/                # 现代化 Web 控制台 (Vue 3 + Tailwind CSS SPA)
+│       └── favicon.svg        # 浏览器标签页图标
 ├── scripts/                   # 用户定时 Python 脚本存放目录 (通过 Web 控制台在线编辑/上传/粘贴)
 │   ├── notify.py              # MiniCron 通用通知模块 (支持脚本内直接 from notify import send)
 │   └── .gitkeep
@@ -177,6 +205,6 @@ python verify_minicron.py
 
 ## 📜 发版与更新历史
 详细版本变更历史请参阅 **[CHANGELOG.md](CHANGELOG.md)**。
+* **[v1.2.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.2.0)**：内置帮助指南与快捷重跑、SSE 日志稳定性修复、控制台交互与 Docker 构建优化，并新增产品界面预览与浏览器图标。
 * **[v1.1.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.1.0)**：系统安全告警拆分、纯净直观自定义通知、双通道独立测试。
 * **[v1.0.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.0.0)**：MiniCron 首个正式版本发布。
-
