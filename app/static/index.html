@@ -8,11 +8,32 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Vue 3 CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     [v-cloak] { display: none; }
     .term-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
     .term-scroll::-webkit-scrollbar-track { background: #1e1e2e; }
     .term-scroll::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+
+    /* 暗色 Markdown 渲染样式 */
+    .markdown-body h1 { font-size: 1.4rem; font-weight: 800; color: #f8fafc; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+    .markdown-body h2 { font-size: 1.2rem; font-weight: 700; color: #38bdf8; margin-top: 1.25rem; margin-bottom: 0.5rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.25rem; }
+    .markdown-body h3 { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin-top: 1rem; margin-bottom: 0.4rem; }
+    .markdown-body p { margin-top: 0.4rem; margin-bottom: 0.75rem; line-height: 1.6; color: #cbd5e1; font-size: 0.85rem; }
+    .markdown-body ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; font-size: 0.85rem; color: #cbd5e1; }
+    .markdown-body ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; font-size: 0.85rem; color: #cbd5e1; }
+    .markdown-body li { margin-bottom: 0.25rem; }
+    .markdown-body code { font-family: ui-monospace, monospace; font-size: 0.8rem; background-color: #0f172a; padding: 0.15rem 0.35rem; border-radius: 0.25rem; color: #38bdf8; border: 1px solid #1e293b; }
+    .markdown-body pre { background-color: #020617; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 0.75rem 1rem; overflow-x: auto; margin-top: 0.5rem; margin-bottom: 0.75rem; }
+    .markdown-body pre code { background-color: transparent; border: none; padding: 0; color: #e2e8f0; font-size: 0.8rem; }
+    .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.8rem; }
+    .markdown-body th { background-color: #0f172a; border: 1px solid #334155; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #e2e8f0; }
+    .markdown-body td { border: 1px solid #1e293b; padding: 0.5rem 0.75rem; color: #cbd5e1; }
+    .markdown-body blockquote { border-left: 3px solid #38bdf8; padding-left: 0.75rem; margin: 0.75rem 0; color: #94a3b8; background-color: #0f172a50; border-radius: 0 0.375rem 0.375rem 0; padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .markdown-body a { color: #38bdf8; text-decoration: underline; text-underline-offset: 2px; }
+    .markdown-body a:hover { color: #7dd3fc; }
+    .markdown-body hr { border-color: #334155; margin: 1.25rem 0; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
@@ -107,6 +128,16 @@
           >
             <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <span class="font-medium">设置中心</span>
+          </button>
+
+          <!-- 使用帮助按钮 -->
+          <button 
+            @click="openHelpModal" 
+            class="text-xs bg-slate-700/80 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl border border-slate-600/50 transition flex items-center gap-1.5 shadow-sm"
+            title="查看使用与配置指南 (FAQ、脚本通知示例、Cron速查)"
+          >
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <span class="font-medium">帮助</span>
           </button>
 
           <!-- 分隔线 -->
@@ -829,6 +860,22 @@
                 <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
               </div>
 
+              <!-- 帮助提示横幅 -->
+              <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2 text-indigo-300">
+                  <span class="text-base">💡</span>
+                  <span>不知道脚本如何编写通知或获取 Chat ID？</span>
+                </div>
+                <button 
+                  type="button" 
+                  @click="openHelpModal" 
+                  class="text-indigo-400 hover:text-indigo-300 underline font-medium shrink-0 flex items-center gap-1"
+                >
+                  <span>查看配置指南</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+
               <form @submit.prevent="saveNotificationSettings" class="space-y-5 text-xs">
                 <!-- 启用 Telegram 总开关 -->
                 <div class="flex items-center justify-between bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
@@ -1509,6 +1556,68 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- 帮助文档阅读模态框 (Help & FAQ Modal) -->
+    <div 
+      v-if="showHelpModal" 
+      @click.self="showHelpModal = false"
+      class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+    >
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <!-- 弹窗顶栏 -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/80 bg-slate-800/80">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <span>MiniCron 配置与使用指南</span>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">docs/help.md</span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">常见疑问速查、脚本通知接入示例、Telegram 出海代理及 Crontab 表达式指南</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <a 
+              href="https://github.com/ddmasato1/MiniCron/blob/main/docs/help.md" 
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-xs bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl border border-slate-600/50 transition flex items-center gap-1.5"
+              title="在 GitHub 新标签页打开"
+            >
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+              <span>GitHub</span>
+            </a>
+            <button 
+              @click="showHelpModal = false" 
+              class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition leading-none text-lg"
+              title="关闭"
+            >&times;</button>
+          </div>
+        </div>
+
+        <!-- 弹窗内容区 (渲染 Markdown) -->
+        <div class="flex-1 overflow-y-auto term-scroll p-6 bg-slate-900/60">
+          <div v-if="isHelpLoading" class="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+            <svg class="animate-spin h-6 w-6 text-emerald-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <span class="text-xs font-mono">正在加载帮助文档...</span>
+          </div>
+          <div v-else class="markdown-body select-text" v-html="helpContentHtml"></div>
+        </div>
+
+        <!-- 弹窗底部操作区 -->
+        <div class="px-6 py-3 border-t border-slate-700/80 bg-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+          <span>提示：可以在上方代码块中快速复制示例</span>
+          <button 
+            @click="showHelpModal = false" 
+            class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-xl font-medium transition"
+          >
+            关闭
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 全局确认框与消息提示，始终位于所有浮层之上 -->
@@ -2639,6 +2748,39 @@
           }
         };
 
+        // 帮助文档状态与方法
+        const showHelpModal = ref(false);
+        const helpContentHtml = ref("");
+        const isHelpLoading = ref(false);
+
+        const fetchHelpContent = async () => {
+          if (helpContentHtml.value) return; // 避免重复拉取
+          isHelpLoading.value = true;
+          try {
+            const res = await apiRequest("/api/system/help");
+            if (res.code === 0 && res.data && res.data.content) {
+              const rawMd = res.data.content;
+              if (window.marked && typeof window.marked.parse === 'function') {
+                helpContentHtml.value = window.marked.parse(rawMd);
+              } else {
+                // 降级纯文本呈现
+                helpContentHtml.value = `<pre class="whitespace-pre-wrap font-sans text-xs text-slate-300 leading-relaxed">${rawMd}</pre>`;
+              }
+            } else {
+              helpContentHtml.value = `<p class="text-rose-400">加载帮助文档失败: ${res.message || '未知错误'}</p>`;
+            }
+          } catch (e) {
+            helpContentHtml.value = `<p class="text-rose-400">请求异常: ${e.message}</p>`;
+          } finally {
+            isHelpLoading.value = false;
+          }
+        };
+
+        const openHelpModal = async () => {
+          showHelpModal.value = true;
+          await fetchHelpContent();
+        };
+
         onMounted(() => {
           checkAuth();
           // 定时轮询：常规每 10 秒同步系统状态与任务列表
@@ -2689,7 +2831,9 @@
           showSettingsModal, activeSettingsTab, openSettingsModal, switchSettingsTab,
           // 系统通知与网络代理
           showNotificationModal, notifyNetworkMode, notifyForm, isTestingNotify, testingType, isSavingNotify,
-          openNotificationModal, saveNotificationSettings, testNotificationConnection
+          openNotificationModal, saveNotificationSettings, testNotificationConnection,
+          // 使用与配置指南
+          showHelpModal, helpContentHtml, isHelpLoading, openHelpModal, fetchHelpContent
         };
       }
     }).mount("#app");

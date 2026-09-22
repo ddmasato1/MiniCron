@@ -4,6 +4,7 @@ import resource
 import time
 from datetime import datetime
 from fastapi import APIRouter, Depends
+from app.core.config import settings
 from app.core.security import get_current_admin
 from app.core.scheduler import scheduler_manager
 from app.services.runner import task_runner
@@ -40,3 +41,16 @@ async def get_system_status():
             "active_running_tasks": len(task_runner._running_tasks)
         }
     )
+
+@router.get("/help", response_model=ApiResponse)
+async def get_system_help():
+    """获取系统使用与配置指南 Markdown 内容 (docs/help.md)"""
+    help_file = settings.BASE_DIR / "docs" / "help.md"
+    if not help_file.exists():
+        return ApiResponse(code=404, message="帮助文档不存在", data={"content": "# 帮助文档未找到\n\n请确认 docs/help.md 文件是否存在。"})
+    
+    try:
+        content = help_file.read_text(encoding="utf-8", errors="replace")
+        return ApiResponse(data={"content": content})
+    except Exception as e:
+        return ApiResponse(code=500, message=f"读取帮助文档失败: {e}", data={"content": f"读取失败: {e}"})
