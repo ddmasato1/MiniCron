@@ -25,7 +25,8 @@ MiniCron/
 ├── docs/                      # 核心规范与设计文档
 │   ├── PRD.md                 # 产品需求规格说明书
 │   ├── ARCHITECTURE.md        # 系统架构设计方案 (含 Mermaid 拓扑与 E-R 图)
-│   └── API_SPEC.md            # RESTful API 接口规范
+│   ├── API_SPEC.md            # RESTful API 接口规范
+│   └── help.md                # 用户配置与使用指南 (FAQ、通知接入、Cron速查)
 ├── app/                       # 核心业务源码 (FastAPI)
 │   ├── core/                  # 配置管理、APScheduler 调度生命周期、PBKDF2 安全鉴权
 │   ├── models/                # SQLite 数据模型与 Pydantic 契约
@@ -49,11 +50,13 @@ MiniCron/
 
 ---
 
-## 📖 设计与规范文档
+## 📖 文档中心
 
+* 📘 **[配置与使用指南 (HELP & FAQ)](docs/help.md)**：**强烈推荐新手阅读**！包含脚本如何添加通知、Telegram Bot 获取、环境变量优先级、依赖安装与 Crontab 表达式速查表。
 * 📋 **[产品需求规格说明书 (PRD)](docs/PRD.md)**：包含业务背景、用户角色、详细功能清单（任务管理、调度执行、日志追踪）及非功能安全指标。
 * 🏛️ **[系统架构设计方案 (ARCHITECTURE)](docs/ARCHITECTURE.md)**：包含系统架构拓扑、任务状态机时序图、防注入安全沙箱原理及数据库 E-R 规范。
 * 🔌 **[RESTful API 规范文档 (API_SPEC)](docs/API_SPEC.md)**：详细定义所有前后端交互接口与请求响应数据结构。
+* 📜 **[版本变更日志 (CHANGELOG)](CHANGELOG.md)**：详细记录各版本的发布与功能演进历史。
 
 ---
 
