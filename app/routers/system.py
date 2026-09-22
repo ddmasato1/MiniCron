@@ -44,10 +44,24 @@ async def get_system_status():
 
 @router.get("/help", response_model=ApiResponse)
 async def get_system_help():
-    """获取系统使用与配置指南 Markdown 内容 (docs/help.md)"""
-    help_file = settings.BASE_DIR / "docs" / "help.md"
-    if not help_file.exists():
-        return ApiResponse(code=404, message="帮助文档不存在", data={"content": "# 帮助文档未找到\n\n请确认 docs/help.md 文件是否存在。"})
+    """获取系统使用与配置指南 Markdown 内容 (支持自适应多路径检索)"""
+    candidate_paths = [
+        settings.BASE_DIR / "docs" / "help.md",
+        settings.BASE_DIR / "app" / "static" / "help.md",
+        Path(__file__).resolve().parent.parent / "static" / "help.md",
+        Path("docs/help.md"),
+        Path("/app/docs/help.md"),
+        Path("/app/app/static/help.md")
+    ]
+    
+    help_file = None
+    for p in candidate_paths:
+        if p.is_file():
+            help_file = p
+            break
+
+    if not help_file:
+        return ApiResponse(code=404, message="帮助文档不存在", data={"content": "# 帮助文档未找到\n\n请确认 docs/help.md 或 app/static/help.md 文件是否存在。"})
     
     try:
         content = help_file.read_text(encoding="utf-8", errors="replace")

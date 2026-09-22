@@ -16,3 +16,4 @@ services:
       - ./app:/app/app          # 挂载应用代码与静态资源
       - ./data:/app/data        # 挂载持久化数据库与日志
       - ./scripts:/app/scripts  # 挂载宿主机 Python 脚本目录
+      - ./docs:/app/docs:ro     # 挂载帮助指南文档 (只读)

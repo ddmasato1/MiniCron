@@ -113,10 +113,10 @@ flowchart TD
 * **超时终止机制**：
   * 使用 `asyncio.wait_for(..., timeout=task.timeout_seconds)`，超时未退出时向子进程发送 `SIGTERM`，若 3 秒内未退出则强制 `SIGKILL`，防止僵尸进程。
 
-### 3.3 安全沙箱模型 (`app.core.security`)
-为彻底吸取青龙面板的安全教训，MiniCron 在架构上设立 4 道硬核防线：
+#### 3.3 安全沙箱模型 (`app.core.security`)
+在系统安全性上，MiniCron 在架构上设立 4 道硬核防线：
 
-| 防御维度 | 青龙等传统系统常见隐患 | MiniCron 架构级防护 |
+| 防御维度 | 传统定时运维工具常见隐患 | MiniCron 架构级防护 |
 | :--- | :--- | :--- |
 | **命令执行方式** | 允许输入字符串通过 `sh -c "..."` 执行，极易被拼接注入 (如 `; rm -rf` 或反弹 shell) | 强制使用 `create_subprocess_exec` 列表传参，**彻底禁用系统 Shell 解释器** |
 | **文件路径控制** | 未对相对路径严格校验，存在 `../../etc/passwd` 等路径遍历风险 | 强制调用 `path.resolve()`，校验 `child.is_relative_to(SCRIPTS_DIR)`，违者直接阻断 |
@@ -167,13 +167,13 @@ flowchart TD
   * **细分开关**：默认开启「登录失败告警」（含来源 IP 溯源）与「密码修改提醒」，「登录成功」设为可选开关。
 
 * **任务通知策略治理 (`notify_policy`)**：
-  * `CUSTOM_ONLY`（默认推荐，青龙模式）：仅当脚本显式调用 `notify.send()` 时推送纯净自定义业务内容；若任务异常崩溃（退出码非 0）由系统兜底告警；普通成功任务保持静默；
+  * `CUSTOM_ONLY`（默认推荐）：仅当脚本显式调用 `notify.send()` 时推送纯净自定义业务内容；若任务异常崩溃（退出码非 0）由系统兜底告警；普通成功任务保持静默；
   * `ONLY_FAILURE`：仅在任务返回非 0 退出码或超时强杀时推送；
   * `ALWAYS`：无论成功或失败均推送；
   * `OFF`：关闭任务推送。
 
-* **青龙模式直观业务通知 vs 系统故障兜底（双轨制推送）**：
-  * **业务通知（青龙直观模式）**：脚本中调用 `notify.send(title, content)` 时，MiniCron 通过标准输出结构化协议（`__MINICRON_NOTIFY_START__...__MINICRON_NOTIFY_END__`）精准捕获，直接向 Telegram 推送纯净的 `【标题】+ 正文` 消息，文末附带轻量标注（`🕒 时间戳 · 任务名`），彻底摒弃耗时、退出代码等机器参数噪音；
+* **纯净直观业务通知 vs 系统故障兜底（双轨制推送）**：
+  * **业务通知（纯净模式）**：脚本中调用 `notify.send(title, content)` 时，MiniCron 通过标准输出结构化协议（`__MINICRON_NOTIFY_START__...__MINICRON_NOTIFY_END__`）精准捕获，直接向 Telegram 推送纯净的 `【标题】+ 正文` 消息，文末附带轻量标注（`🕒 时间戳 · 任务名`），彻底摒弃耗时、退出代码等机器参数噪音；
   * **系统故障兜底**：脚本未主动通知但发生异常退出时，发送精简版故障报警卡片，仅提取末尾关键 Traceback / Error 摘要；
   * **日志自动清洗**：后台控制台查看日志时，自动剥离通知标记块，保证终端日志洁净。
 
@@ -185,7 +185,7 @@ flowchart TD
     * 支持将官方 `https://api.telegram.org` 替换为自定义反代域名（如 `https://tg-proxy.yourdomain.com` 或 Cloudflare Workers 反代）；
     * 优势：国内服务器**无需安装任何代理客户端**即可稳定推送到 Telegram。
 
-* **内置 `notify.py` 兼容垫片 (青龙面板脚本零侵入)**：
+* **内置 `notify.py` 通用通知模块 (脚本零侵入)**：
   * 在 `scripts/` 目录内置标准 `notify.py` 模块，提供符合规范的 `send(title, content)` 函数；
   * 脚本运行时工作目录（`cwd`）即为 `scripts/`，因此脚本直接执行 `from notify import send` 即可开箱即用，消除缺文件警告，输出结构化标记由 MiniCron 自动捕获。
 

@@ -28,9 +28,10 @@ COPY requirements.txt .
 # 安装 Python 核心依赖 (使用清华 PyPI 镜像加速)
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 复制应用代码与示例脚本
+# 复制应用代码、示例脚本与文档
 COPY app/ ./app/
 COPY scripts/ ./scripts/
+COPY docs/ ./docs/
 
 # 创建持久化日志目录
 RUN mkdir -p /app/data/logs

@@ -63,7 +63,7 @@ class NotifierService:
     @staticmethod
     def _extract_custom_notifications(raw_log: str) -> List[Dict[str, str]]:
         """
-        从脚本运行日志中提取所有结构化自定义通知（兼容青龙 notify.send 协议）
+        从脚本运行日志中提取所有结构化自定义通知（支持 notify.send 协议）
         标记格式：__MINICRON_NOTIFY_START__{"title": "...", "content": "..."}__MINICRON_NOTIFY_END__
         """
         if not raw_log or NOTIFY_START_MARKER not in raw_log:
@@ -308,7 +308,7 @@ class NotifierService:
     async def notify_task_result(self, task: dict, execution: dict) -> None:
         """
         任务执行完毕后触发结果通知：
-        1. 优先提取脚本通过 notify.send() 发送的自定义通知（青龙直观模式）；
+        1. 优先提取脚本通过 notify.send() 发送的自定义通知（纯净业务模式）；
         2. 若未自定义通知且任务失败，则发送精简故障告警卡片；
         3. 若 policy 为 ALWAYS，且未自定义通知且任务成功，发送精简完成提醒。
         """
@@ -347,7 +347,7 @@ class NotifierService:
                     except Exception as e:
                         logger.warning(f"读取任务日志失败: {e}")
 
-            # 1. 尝试提取脚本主动发出的自定义通知 (青龙规范)
+            # 1. 尝试提取脚本主动发出的自定义通知
             custom_notifs = self._extract_custom_notifications(raw_log)
 
             if custom_notifs:
@@ -355,7 +355,7 @@ class NotifierService:
                 if policy == "ONLY_FAILURE" and status == "SUCCESS":
                     return
 
-                # 发送纯粹直观的青龙风格自定义通知
+                # 发送纯粹直观的自定义通知
                 for notif in custom_notifs:
                     title = notif.get("title", "").strip()
                     content = notif.get("content", "").strip()
