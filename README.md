@@ -38,7 +38,7 @@ MiniCron/
 ├── data/                      # 运行时持久化数据 (Git 忽略)
 │   ├── minicron.db            # SQLite 数据库文件 (自动生成与迁移)
 │   └── logs/                  # 任务执行日志归档
-├── Dockerfile                 # 98MB 极简 Alpine 生产镜像
+├── Dockerfile                 # 基于 Python 3.11-slim 的轻量生产镜像
 ├── docker-compose.yml         # 容器化部署编排 (挂载 data / scripts / app)
 ├── verify_minicron.py         # 端到端全链路自动化测试套件
 ├── .gitignore

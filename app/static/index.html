@@ -842,16 +842,42 @@
                   </label>
                 </div>
 
-                <!-- Bot Token -->
-                <div>
-                  <label class="block font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
-                  <input 
-                    v-model="notifyForm.telegram_bot_token" 
-                    type="text" 
-                    placeholder="如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
-                  />
-                  <p class="text-[11px] text-slate-500 mt-1">可在 Telegram 联系 @BotFather 创建 Bot 并获取 Token（任务与安全告警共用该 Bot）</p>
+                <!-- Telegram 机器人凭据与接收目标 -->
+                <div class="border border-slate-700/80 bg-slate-900/40 rounded-xl p-4 space-y-3.5">
+                  <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                    <span class="text-base">🤖</span>
+                    <div>
+                      <span class="font-bold text-white text-xs">Telegram 机器人凭据与接收目标</span>
+                      <p class="text-slate-400 text-[10px]">配置 Bot 认证凭据与默认消息推送目标（填好 Token 与 Chat ID 即可完成基础对接）</p>
+                    </div>
+                  </div>
+
+                  <!-- Bot Token -->
+                  <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
+                    <input 
+                      v-model="notifyForm.telegram_bot_token" 
+                      type="text" 
+                      placeholder="如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                      class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
+                    />
+                    <p class="text-[11px] text-slate-500 mt-1">可在 Telegram 联系 @BotFather 创建 Bot 并获取 Token（任务与安全告警共用该 Bot）</p>
+                  </div>
+
+                  <!-- 任务/默认 Chat ID -->
+                  <div>
+                    <label class="block font-semibold text-slate-300 mb-1">
+                      <span>任务通知接收者 Chat ID</span>
+                      <span class="text-[10px] text-slate-500 font-normal ml-1.5">(默认接收目标)</span>
+                    </label>
+                    <input 
+                      v-model="notifyForm.telegram_chat_id" 
+                      type="text" 
+                      placeholder="如: 123456789 或 @my_channel"
+                      class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
+                    />
+                    <p class="text-[11px] text-slate-500 mt-1">接收任务执行报告的个人 ID 或频道/群组 ID（安全告警默认亦发送至此）</p>
+                  </div>
                 </div>
 
                 <!-- 网络连接模式选择 -->
@@ -939,18 +965,6 @@
                         <p class="text-slate-400 text-[10px]">脚本签到结果、日常任务执行状态推送</p>
                       </div>
                     </div>
-                  </div>
-
-                  <!-- 任务 Chat ID -->
-                  <div>
-                    <label class="block font-semibold text-slate-300 mb-1">任务通知接收者 Chat ID</label>
-                    <input 
-                      v-model="notifyForm.telegram_chat_id" 
-                      type="text" 
-                      placeholder="如: 123456789 或 @my_channel"
-                      class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-sky-500 outline-none"
-                    />
-                    <p class="text-[11px] text-slate-500 mt-1">接收任务执行报告的个人 ID 或频道/群组 ID</p>
                   </div>
 
                   <!-- 通知触发策略 -->
