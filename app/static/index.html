@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>MiniCron - 轻量定时任务管理控制台</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <!-- Tailwind CSS CDN -->
@@ -35,14 +35,111 @@
     .markdown-body a { color: #38bdf8; text-decoration: underline; text-underline-offset: 2px; }
     .markdown-body a:hover { color: #7dd3fc; }
     .markdown-body hr { border-color: #334155; margin: 1.25rem 0; }
+
+    /* 窄屏布局：沿用现有暗色控制台，只收紧间距并让各面板独立滚动。 */
+    .mobile-modal-panel { min-width: 0; }
+    .settings-tabs { min-width: 0; }
+    .task-card, .script-row, .settings-card { min-width: 0; }
+    .task-more-wrap { display: none; }
+    .task-copy, .script-path, .env-value { overflow-wrap: anywhere; }
+    .markdown-body { min-width: 0; overflow-wrap: anywhere; }
+    .markdown-body table { display: block; max-width: 100%; overflow-x: auto; }
+    .markdown-body pre { max-width: 100%; }
+
+    @media (max-width: 767px) {
+      header.mobile-header { flex-wrap: wrap; gap: 0.65rem; padding-block: 0.75rem; }
+      .mobile-header-brand { flex: 1 1 9rem; min-width: 0; }
+      .mobile-header-actions { flex: 1 1 100%; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; }
+      .mobile-header-actions > button, .task-actions > button,
+      .mobile-modal-panel button, .settings-panel button, .mobile-help-panel button, .confirm-panel button { min-width: 2.75rem; min-height: 2.75rem; }
+      .mobile-modal-backdrop { padding: 0; align-items: stretch; }
+      .mobile-modal-panel, .settings-panel, .mobile-help-panel { width: 100%; max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; }
+      .mobile-modal-panel { padding: 1rem; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+      .mobile-modal-panel > form { min-height: 0; }
+      .mobile-modal-panel input:not([type="checkbox"]):not([type="radio"]), .mobile-modal-panel select,
+      .settings-panel input:not([type="checkbox"]):not([type="radio"]), .settings-panel select { min-height: 2.75rem; font-size: 16px; }
+      .mobile-modal-panel textarea { font-size: 16px; }
+      .mobile-login-panel input, .mobile-login-panel button { min-height: 2.75rem; }
+      .mobile-login-panel input { font-size: 16px; }
+      .settings-tabs { flex: 0 0 auto; display: flex; gap: 0.35rem; overflow-x: auto; overflow-y: hidden; padding: 0.4rem; border-bottom: 1px solid #334155; }
+      .settings-tabs > button { width: auto; flex: 0 0 auto; min-height: 2.75rem; padding-inline: 0.7rem; white-space: nowrap; }
+      .settings-content { min-height: 0; padding: 0.85rem; padding-bottom: max(0.85rem, env(safe-area-inset-bottom)); }
+      .notify-network-choices { grid-template-columns: minmax(0, 1fr); }
+      .notify-policy-choices { grid-template-columns: minmax(0, 1fr); }
+      .mobile-log-panel { width: 100%; max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; padding: 0; }
+      .mobile-log-header { flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem; padding-top: max(0.75rem, env(safe-area-inset-top)); }
+      .mobile-log-heading { min-width: 0; flex-wrap: wrap; }
+      .mobile-log-controls { flex-wrap: wrap; gap: 0.35rem; }
+      .mobile-log-controls > button { min-width: 2.75rem; min-height: 2.75rem; padding-inline: 0.55rem; }
+      .mobile-log-history { max-height: min(28vh, 12rem); border-right: 0; border-bottom: 1px solid #1e293b; }
+      .mobile-log-terminal { min-width: 0; overflow-wrap: anywhere; padding: 0.75rem; padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+      .mobile-script-tabs { overflow-x: auto; flex: 0 0 auto; }
+      .mobile-script-tabs > button { flex: 0 0 auto; padding-inline: 0.65rem; white-space: nowrap; }
+      .script-row { align-items: stretch; flex-direction: column; }
+      .script-row-info { min-width: 0; flex-wrap: wrap; overflow-wrap: anywhere; }
+      .script-row-actions { justify-content: flex-end; flex-wrap: wrap; }
+      .mobile-script-footer { align-items: stretch; flex-direction: column; gap: 0.5rem; }
+      .mobile-script-footer > button { align-self: flex-end; }
+      .package-row { align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem; }
+      .package-info { flex: 1 1 100%; flex-wrap: wrap; gap: 0.35rem 0.65rem; }
+      .package-name { overflow-wrap: anywhere; }
+      .settings-content > form { min-width: 0; }
+      .mobile-settings-footer { flex-wrap: wrap; gap: 0.5rem; }
+      .mobile-settings-footer > div { flex-wrap: wrap; }
+      .mobile-settings-footer > button { flex: 1 1 100%; }
+      .mobile-env-row { align-items: stretch; flex-direction: column; }
+      .mobile-env-row > input { min-width: 0; width: 100%; }
+      .mobile-code-header { align-items: flex-start; flex-direction: column; gap: 0.65rem; padding: 0.75rem; }
+      .mobile-code-path { min-width: 0; overflow-wrap: anywhere; }
+      .mobile-code-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+      .mobile-editor-header { align-items: flex-start; flex-direction: column; gap: 0.65rem; padding: 0.75rem; }
+      .mobile-editor-title { min-width: 0; }
+      .mobile-editor-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+      .mobile-editor-footer { align-items: flex-start; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.75rem; }
+      .mobile-editor-footer > div { overflow-wrap: anywhere; }
+      .mobile-help-header, .mobile-help-footer { gap: 0.5rem; padding: 0.75rem; }
+      .mobile-help-header { align-items: flex-start; }
+      .mobile-help-header-copy { min-width: 0; }
+      .mobile-help-header-copy h3 { flex-wrap: wrap; }
+      .mobile-help-header-copy p { display: none; }
+      .mobile-help-content { padding: 0.85rem; }
+      .mobile-help-footer { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+      .mobile-help-footer span { min-width: 0; }
+    }
+
+    @media (max-width: 639px) {
+      html, body, #app { min-width: 0; }
+      header.mobile-header { padding-inline: 0.75rem; }
+      .mobile-header-actions { gap: 0.4rem; }
+      .mobile-header-actions > button { flex: 1 1 auto; justify-content: center; padding-inline: 0.55rem; }
+      .mobile-header-divider { display: none; }
+      .mobile-main { padding: 0.75rem; }
+      .mobile-summary { align-items: stretch; padding: 0.75rem; }
+      .mobile-summary-counts { justify-content: space-between; gap: 0.55rem; font-size: 0.72rem; }
+      .task-card { padding: 1rem; }
+      .task-actions { width: 100%; flex-wrap: nowrap; gap: 0.35rem; }
+      .task-actions > button { flex: 1 1 auto; min-width: 0; padding-inline: 0.5rem; white-space: nowrap; }
+      .task-actions .task-desktop-actions { display: none; }
+      .task-more-wrap { display: block; position: relative; flex: 0 0 auto; }
+      .task-more-trigger { width: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; padding: 0; }
+      .task-more-menu { position: absolute; top: calc(100% + 0.5rem); right: 0; z-index: 40; width: min(12rem, calc(100vw - 1.5rem)); padding: 0.35rem; border: 1px solid #334155; border-radius: 0.75rem; background: #0f172a; box-shadow: 0 12px 28px rgb(0 0 0 / 35%); }
+      .task-more-menu > button { width: 100%; min-height: 2.75rem; padding: 0.65rem 0.75rem; text-align: left; border-radius: 0.5rem; }
+      .task-more-menu > button:hover { background: #1e293b; }
+      .mobile-toast { top: max(0.75rem, env(safe-area-inset-top)); right: 0.75rem; width: calc(100% - 1.5rem); max-width: none; }
+    }
+
+    @media (max-height: 520px) and (max-width: 900px) {
+      .mobile-modal-backdrop { align-items: stretch; }
+      .mobile-modal-panel, .settings-panel, .mobile-help-panel { height: 100vh; height: 100dvh; max-height: none; }
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
-  <div id="app" v-cloak class="min-h-screen flex flex-col">
+  <div id="app" v-cloak class="min-h-screen flex flex-col" @click="closeTaskMoreMenu">
 
     <!-- 登录屏 -->
     <div v-if="!isAuthenticated" class="flex-1 flex items-center justify-center p-4">
-      <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
+      <div class="mobile-login-panel bg-slate-800 border border-slate-700/80 rounded-2xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
         <div class="text-center mb-6">
           <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-3 border border-indigo-500/30">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +181,8 @@
     <!-- 授权后的主操作台 -->
     <div v-else class="flex-1 flex flex-col">
       <!-- 顶部导航栏 -->
-      <header class="bg-slate-800/80 border-b border-slate-700/60 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
+      <header class="mobile-header bg-slate-800/80 border-b border-slate-700/60 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
+        <div class="mobile-header-brand flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" stroke-width="2"/>
@@ -109,7 +206,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="mobile-header-actions flex items-center gap-2">
           <!-- 脚本管理按钮 (核心资产) -->
           <button 
             @click="openScriptModal('list')" 
@@ -142,7 +239,7 @@
           </button>
 
           <!-- 分隔线 -->
-          <div class="h-4 w-px bg-slate-700 mx-1"></div>
+          <div class="mobile-header-divider h-4 w-px bg-slate-700 mx-1"></div>
 
           <!-- 退出登录 -->
           <button 
@@ -157,11 +254,11 @@
       </header>
 
       <!-- 主体内容 -->
-      <main class="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6">
+      <main class="mobile-main flex-1 max-w-6xl w-full mx-auto p-6 space-y-6">
         
         <!-- 操作与汇总条 -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
-          <div class="flex items-center gap-4 text-sm">
+        <div class="mobile-summary flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
+          <div class="mobile-summary-counts flex items-center gap-4 text-sm">
             <div>
               <span class="text-slate-400">任务总数:</span>
               <span class="font-bold text-white ml-1.5 text-base">{{ tasks.length }}</span>
@@ -213,12 +310,12 @@
           <div 
             v-for="task in tasks" 
             :key="task.id" 
-            class="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-5 hover:border-slate-600 transition shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5"
+            class="task-card bg-slate-800/70 border border-slate-700/60 rounded-2xl p-5 hover:border-slate-600 transition shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5"
           >
             <!-- 任务核心信息 -->
-            <div class="space-y-2 flex-1">
+            <div class="task-copy space-y-2 flex-1 min-w-0">
               <div class="flex items-center gap-3">
-                <h3 class="text-base font-bold text-white">{{ task.name }}</h3>
+                <h3 class="text-base font-bold text-white break-words">{{ task.name }}</h3>
                 <!-- 状态徽标 -->
                 <span 
                   v-if="task.is_running" 
@@ -254,7 +351,7 @@
             </div>
 
             <!-- 操作按钮组 -->
-            <div class="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-700/60">
+            <div class="task-actions flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-700/60">
               <!-- 启停开关 -->
               <button 
                 @click="toggleTask(task)"
@@ -273,7 +370,7 @@
                 title="立即手动触发一次"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" stroke-width="2" fill="currentColor"/></svg>
-                <span>立即运行</span>
+                <span><span class="hidden sm:inline">立即</span>运行</span>
               </button>
 
               <!-- 查看日志 -->
@@ -286,6 +383,22 @@
                 <span>日志</span>
               </button>
 
+              <div class="task-more-wrap">
+                <button
+                  type="button"
+                  class="task-more-trigger bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl transition text-lg font-bold"
+                  aria-haspopup="menu"
+                  :aria-label="`更多操作：${task.name}`"
+                  :aria-expanded="openTaskMoreId === task.id"
+                  @click.stop="toggleTaskMoreMenu(task.id)"
+                >⋯</button>
+                <div v-if="openTaskMoreId === task.id" class="task-more-menu" role="menu" :aria-label="`${task.name}的更多操作`">
+                  <button type="button" role="menuitem" @click.stop="closeTaskMoreMenu(); openEditModal(task)">编辑任务</button>
+                  <button type="button" role="menuitem" class="text-rose-300" @click.stop="closeTaskMoreMenu(); deleteTask(task)">删除任务</button>
+                </div>
+              </div>
+
+              <div class="task-desktop-actions flex items-center gap-2">
               <!-- 编辑 -->
               <button 
                 @click="openEditModal(task)" 
@@ -303,14 +416,15 @@
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
+              </div>
             </div>
           </div>
         </div>
       </main>
 
       <!-- 任务编辑 / 新增模态框 -->
-      <div v-if="showTaskModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div v-if="showTaskModal" class="mobile-modal-backdrop fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-modal-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
             <h3 class="text-lg font-bold text-white">{{ isEditing ? '编辑定时任务' : '新建定时任务' }}</h3>
             <button @click="showTaskModal = false" class="text-slate-400 hover:text-white">&times;</button>
@@ -423,7 +537,7 @@
                 <button type="button" @click="addEnvRow" class="text-[10px] text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">+ 添加变量</button>
               </div>
               <div class="space-y-2 max-h-32 overflow-y-auto">
-                <div v-for="(item, idx) in envRows" :key="idx" class="flex items-center gap-2">
+                <div v-for="(item, idx) in envRows" :key="idx" class="mobile-env-row flex items-center gap-2 min-w-0">
                   <input v-model="item.key" type="text" placeholder="KEY (如 PUSH_KEY)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white outline-none font-mono"/>
                   <input v-model="item.value" type="text" placeholder="VALUE" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white outline-none font-mono"/>
                   <button type="button" @click="removeEnvRow(idx)" class="text-rose-400 hover:text-rose-300 text-sm px-1">&times;</button>
@@ -441,18 +555,18 @@
       </div>
 
       <!-- 日志抽屉 / 弹窗 -->
-      <div v-if="showLogModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div v-if="showLogModal" class="mobile-modal-backdrop fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-log-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
           
           <!-- 头部 -->
-          <div class="bg-slate-800/90 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="font-bold text-white text-sm">运行日志: {{ activeLogTask?.name }}</span>
+          <div class="mobile-log-header bg-slate-800/90 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
+            <div class="mobile-log-heading flex items-center gap-3">
+              <span class="font-bold text-white text-sm break-words">运行日志: {{ activeLogTask?.name }}</span>
               <span v-if="isLogStreaming" class="flex items-center gap-1 text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full animate-pulse">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 实时流式捕获中
               </span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="mobile-log-controls flex items-center gap-2">
               <button 
                 @click="runTaskNow(activeLogTask)" 
                 :disabled="isCurrentTaskRunning"
@@ -472,7 +586,7 @@
           <!-- 主体：左侧历史列表，右侧日志终端 -->
           <div class="flex-1 flex flex-col md:flex-row min-h-0">
             <!-- 历史执行记录列表 -->
-            <div class="w-full md:w-64 bg-slate-950/60 border-r border-slate-800 p-3 overflow-y-auto term-scroll flex-shrink-0">
+            <div class="mobile-log-history w-full md:w-64 bg-slate-950/60 border-r border-slate-800 p-3 overflow-y-auto term-scroll flex-shrink-0">
               <div class="text-[11px] font-bold uppercase text-slate-500 mb-2 px-1">历史执行记录</div>
               <div v-if="executionsList.length === 0" class="text-xs text-slate-600 p-2">暂无执行历史</div>
               <div class="space-y-1">
@@ -495,7 +609,7 @@
             </div>
 
             <!-- 终端展示区域 -->
-            <div class="flex-1 bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-y-auto term-scroll whitespace-pre-wrap select-text leading-relaxed flex flex-col">
+            <div class="mobile-log-terminal flex-1 bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-y-auto term-scroll whitespace-pre-wrap select-text leading-relaxed flex flex-col">
               <!-- 智能缺少模块诊断横幅 -->
               <div v-if="detectedMissingModule" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mb-3 flex items-center justify-between gap-3 text-xs not-italic font-sans flex-shrink-0">
                 <div class="flex items-center gap-2 text-amber-300">
@@ -521,8 +635,8 @@
       </div>
 
       <!-- 脚本管理全功能模态框 (列表 / 粘贴 / 上传) -->
-      <div v-if="showScriptModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] flex flex-col">
+      <div v-if="showScriptModal" class="mobile-modal-backdrop fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-modal-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] flex flex-col">
           
           <!-- 弹窗顶栏 -->
           <div class="flex items-center justify-between border-b border-slate-700 pb-3">
@@ -534,7 +648,7 @@
           </div>
 
           <!-- 选项卡导航 -->
-          <div class="flex border-b border-slate-700/80 gap-2">
+          <div class="mobile-script-tabs flex border-b border-slate-700/80 gap-2">
             <button 
               @click="scriptTab = 'list'"
               :class="scriptTab === 'list' ? 'text-indigo-400 border-indigo-500 bg-indigo-950/30' : 'text-slate-400 border-transparent hover:text-slate-200'"
@@ -569,15 +683,15 @@
             <div 
               v-for="s in scriptsList" 
               :key="s.relative_path" 
-              class="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between font-mono text-xs hover:border-slate-600 transition"
+              class="script-row bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between font-mono text-xs hover:border-slate-600 transition"
             >
-              <div class="flex items-center gap-3">
+              <div class="script-row-info flex items-center gap-3">
                 <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span class="text-white font-bold">{{ s.relative_path }}</span>
+                <span class="script-path text-white font-bold">{{ s.relative_path }}</span>
                 <span class="text-slate-500">({{ (s.file_size/1024).toFixed(1) }} KB)</span>
                 <span class="text-slate-500 hidden sm:inline">{{ s.modified_at }}</span>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="script-row-actions flex items-center gap-2">
                 <button 
                   @click="openScriptEditor(s.relative_path)" 
                   class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-lg text-xs transition flex items-center gap-1"
@@ -605,7 +719,7 @@
 
           <!-- TAB 2: 在线粘贴保存 -->
           <div v-if="scriptTab === 'paste'" class="flex-1 flex flex-col space-y-3 min-h-0">
-            <div class="flex items-center gap-3">
+            <div class="mobile-script-name flex items-center gap-3">
               <div class="flex-1">
                 <label class="block text-xs font-semibold text-slate-300 mb-1">脚本文件名 (*.py)</label>
                 <input 
@@ -630,7 +744,7 @@
               ></textarea>
             </div>
 
-            <div class="flex items-center justify-between pt-2">
+            <div class="mobile-script-footer flex items-center justify-between pt-2">
               <span class="text-xs text-slate-500">保存后自动保存至宿主机 scripts/ 目录并立即可在任务中选取</span>
               <button 
                 @click="submitPasteScript" 
@@ -686,14 +800,14 @@
       </div>
 
       <!-- 脚本代码在线查看抽屉 (z-[60]，高于脚本管理中心 z-50) -->
-      <div v-if="showCodeViewer" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-          <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-400">查看脚本:</span>
-              <span class="font-mono text-sm font-bold text-white">{{ viewingPath }}</span>
+      <div v-if="showCodeViewer" class="mobile-modal-backdrop fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-modal-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+          <div class="mobile-code-header bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-xs font-bold text-slate-400 shrink-0">查看脚本:</span>
+              <span class="mobile-code-path font-mono text-sm font-bold text-white">{{ viewingPath }}</span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="mobile-code-actions flex items-center gap-2">
               <button 
                 @click="openScriptEditor(viewingPath); showCodeViewer = false;" 
                 class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-md shadow-indigo-600/20"
@@ -712,19 +826,19 @@
       </div>
 
       <!-- 脚本在线编辑器模态框 (z-[60]，高于脚本管理中心/任务配置弹窗 z-50) -->
-      <div v-if="showScriptEditorModal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div v-if="showScriptEditorModal" class="mobile-modal-backdrop fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-modal-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl overflow-hidden">
           
           <!-- 编辑器顶部 -->
-          <div class="bg-slate-800/95 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+          <div class="mobile-editor-header bg-slate-800/95 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between">
+            <div class="mobile-editor-title flex items-center gap-3">
               <div class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </div>
               <div>
                 <div class="flex items-center gap-2">
                   <span class="text-xs font-bold text-slate-400">在线编辑脚本:</span>
-                  <span class="font-mono text-sm font-bold text-white">{{ editorScriptPath }}</span>
+                  <span class="script-path font-mono text-sm font-bold text-white">{{ editorScriptPath }}</span>
                 </div>
                 <div class="text-[10px] text-slate-500 font-mono">
                   提示: 支持 Tab 键缩进，支持 Ctrl+S / Cmd+S 快速保存代码
@@ -732,7 +846,7 @@
               </div>
             </div>
             
-            <div class="flex items-center gap-2.5">
+            <div class="mobile-editor-actions flex items-center gap-2.5">
               <span v-if="editorSaveSuccess" class="text-xs text-emerald-400 font-medium flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 已成功保存
@@ -762,7 +876,7 @@
           </div>
           
           <!-- 编辑器底栏信息 -->
-          <div class="bg-slate-900 px-6 py-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <div class="mobile-editor-footer bg-slate-900 px-6 py-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
             <div>字符数: {{ editorContent.length }} | 行数: {{ (editorContent.match(/\n/g) || []).length + 1 }}</div>
             <div class="text-slate-500">Python 3 运行环境 · scripts/{{ editorScriptPath }}</div>
           </div>
@@ -770,8 +884,8 @@
       </div>
 
       <!-- 统一系统设置中心模态框 (All-in-One Settings Center) -->
-      <div v-if="showSettingsModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col md:flex-row h-[88vh] max-h-[780px]">
+      <div v-if="showSettingsModal" class="mobile-modal-backdrop fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+        <div class="settings-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col md:flex-row h-[88vh] max-h-[780px]">
           
           <!-- 左侧分类侧边栏 -->
           <div class="w-full md:w-56 bg-slate-900/90 border-b md:border-b-0 md:border-r border-slate-700/80 flex flex-col shrink-0">
@@ -790,7 +904,7 @@
             </div>
 
             <!-- Tab 切换导航列表 -->
-            <nav class="p-2 space-y-1 flex-1 overflow-y-auto">
+            <nav class="settings-tabs p-2 space-y-1 flex-1 overflow-y-auto">
               <!-- 1. 通知与代理 -->
               <button 
                 @click="switchSettingsTab('notification')" 
@@ -858,7 +972,7 @@
           <div class="flex-1 flex flex-col min-w-0 bg-slate-800 overflow-hidden">
             
             <!-- 面板 1: 通知与代理设置 -->
-            <div v-if="activeSettingsTab === 'notification'" class="flex-1 flex flex-col min-h-0 overflow-y-auto p-6 space-y-4">
+            <div v-if="activeSettingsTab === 'notification'" class="settings-content flex-1 flex flex-col min-h-0 overflow-y-auto p-6 space-y-4">
               <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-2.5">
                   <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
@@ -942,7 +1056,7 @@
                 <!-- 网络连接模式选择 -->
                 <div class="space-y-2">
                   <label class="block font-semibold text-slate-300">网络连接模式</label>
-                  <div class="grid grid-cols-3 gap-2">
+                  <div class="notify-network-choices grid grid-cols-3 gap-2">
                     <label 
                       class="flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer transition text-center"
                       :class="notifyNetworkMode === 'DIRECT' ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300 shadow-sm shadow-emerald-500/10' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'"
@@ -1029,7 +1143,7 @@
                   <!-- 通知触发策略 -->
                   <div>
                     <label class="block font-semibold text-slate-300 mb-1.5">任务通知触发策略</label>
-                    <div class="grid grid-cols-2 gap-2.5">
+                    <div class="notify-policy-choices grid grid-cols-2 gap-2.5">
                       <label class="flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition" :class="notifyForm.notify_policy === 'CUSTOM_ONLY' ? 'bg-sky-950/40 border-sky-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'">
                         <input type="radio" value="CUSTOM_ONLY" v-model="notifyForm.notify_policy" class="text-sky-600 mt-0.5">
                         <div>
@@ -1127,7 +1241,7 @@
                 </div>
 
                 <!-- 底部操作按钮 -->
-                <div class="flex items-center justify-between pt-4 border-t border-slate-700">
+                  <div class="mobile-settings-footer flex items-center justify-between pt-4 border-t border-slate-700">
                   <div class="flex items-center gap-2">
                     <button 
                       type="button" 
@@ -1162,7 +1276,7 @@
             </div>
 
             <!-- 面板 2: 全局环境变量 -->
-            <div v-if="activeSettingsTab === 'env'" class="flex-1 flex flex-col min-h-0 p-6 space-y-4">
+            <div v-if="activeSettingsTab === 'env'" class="settings-content flex-1 flex flex-col min-h-0 p-6 space-y-4">
               <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
@@ -1200,7 +1314,7 @@
                 >
                   <div class="space-y-1 flex-1">
                     <div class="flex items-center gap-2">
-                      <span class="font-mono text-sm font-bold text-indigo-300">{{ item.key }}</span>
+                  <span class="env-key min-w-0 break-all font-mono text-sm font-bold text-indigo-300">{{ item.key }}</span>
                       <span 
                         :class="item.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'"
                         class="text-[10px] px-2 py-0.5 rounded-full border font-mono font-medium"
@@ -1214,7 +1328,7 @@
                     
                     <div class="flex items-center gap-2 text-xs font-mono text-slate-300">
                       <span class="text-slate-500">值:</span>
-                      <span class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 select-all">
+                      <span class="env-value bg-slate-950 px-2 py-0.5 rounded border border-slate-800 select-all">
                         {{ showSecretEnv[item.id] ? item.value : maskSecret(item.value) }}
                       </span>
                       <button 
@@ -1263,7 +1377,7 @@
             </div>
 
             <!-- 面板 3: Python 依赖管理 -->
-            <div v-if="activeSettingsTab === 'packages'" class="flex-1 flex flex-col min-h-0 p-6 space-y-4">
+            <div v-if="activeSettingsTab === 'packages'" class="settings-content flex-1 flex flex-col min-h-0 p-6 space-y-4">
               <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
@@ -1326,11 +1440,11 @@
                 <div 
                   v-for="pkg in filteredPackages" 
                   :key="pkg.name" 
-                  class="bg-slate-900/70 border border-slate-700/60 rounded-xl px-4 py-2.5 flex items-center justify-between hover:border-slate-600 transition font-mono text-xs"
+                  class="package-row bg-slate-900/70 border border-slate-700/60 rounded-xl px-4 py-2.5 flex items-center justify-between hover:border-slate-600 transition font-mono text-xs"
                 >
-                  <div class="flex items-center gap-3">
+                  <div class="package-info flex items-center gap-3 min-w-0">
                     <span :class="pkg.is_custom ? 'bg-emerald-400' : (pkg.is_core ? 'bg-indigo-400' : 'bg-slate-500')" class="w-2 h-2 rounded-full flex-shrink-0"></span>
-                    <span class="text-white font-bold">{{ pkg.name }}</span>
+                    <span class="package-name min-w-0 break-all text-white font-bold">{{ pkg.name }}</span>
                     <span class="text-slate-400">v{{ pkg.version }}</span>
                     <span 
                       v-if="pkg.is_custom" 
@@ -1360,7 +1474,7 @@
             </div>
 
             <!-- 面板 4: 修改管理员密码 -->
-            <div v-if="activeSettingsTab === 'password'" class="flex-1 flex flex-col min-h-0 p-6 space-y-4 max-w-md">
+            <div v-if="activeSettingsTab === 'password'" class="settings-content flex-1 flex flex-col min-h-0 p-6 space-y-4 max-w-md">
               <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-2.5">
                   <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
@@ -1430,8 +1544,8 @@
       </div>
 
       <!-- 添加/编辑环境变量小弹窗 (z-[60]，高于设置中心 z-50) -->
-      <div v-if="showEnvFormModal" class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div v-if="showEnvFormModal" class="mobile-modal-backdrop fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-modal-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
             <h3 class="text-base font-bold text-white">{{ isEditingEnv ? '编辑全局环境变量' : '新增全局环境变量' }}</h3>
             <button @click="showEnvFormModal = false" class="text-slate-400 hover:text-white">&times;</button>
@@ -1483,8 +1597,8 @@
       </div>
 
       <!-- 安装新依赖弹窗 (含实时终端日志，z-[60]，高于设置中心 z-50) -->
-      <div v-if="showInstallPackageModal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+      <div v-if="showInstallPackageModal" class="mobile-modal-backdrop fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="mobile-modal-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
           
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
             <div class="flex items-center gap-2">
@@ -1574,12 +1688,12 @@
     <div 
       v-if="showHelpModal" 
       @click.self="showHelpModal = false"
-      class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+      class="mobile-modal-backdrop fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
     >
-      <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="mobile-help-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         <!-- 弹窗顶栏 -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/80 bg-slate-800/80">
-          <div class="flex items-center gap-3">
+        <div class="mobile-help-header flex items-center justify-between px-6 py-4 border-b border-slate-700/80 bg-slate-800/80">
+          <div class="mobile-help-header-copy flex items-center gap-3">
             <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             </div>
@@ -1611,7 +1725,7 @@
         </div>
 
         <!-- 弹窗内容区 (渲染 Markdown) -->
-        <div id="helpModalBody" @click="handleHelpDocClick" class="flex-1 overflow-y-auto term-scroll p-6 bg-slate-900/60">
+        <div id="helpModalBody" @click="handleHelpDocClick" class="mobile-help-content flex-1 overflow-y-auto term-scroll p-6 bg-slate-900/60">
           <div v-if="isHelpLoading" class="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
             <svg class="animate-spin h-6 w-6 text-emerald-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
             <span class="text-xs font-mono">正在加载帮助文档...</span>
@@ -1620,7 +1734,7 @@
         </div>
 
         <!-- 弹窗底部操作区 -->
-        <div class="px-6 py-3 border-t border-slate-700/80 bg-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+        <div class="mobile-help-footer px-6 py-3 border-t border-slate-700/80 bg-slate-800/80 flex items-center justify-between text-xs text-slate-400">
           <span>提示：可以在上方代码块中快速复制示例</span>
           <button 
             @click="showHelpModal = false" 
@@ -1638,7 +1752,7 @@
       @click.self="closeConfirmDialog"
       class="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4"
     >
-      <div role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" class="bg-slate-800 border border-rose-500/30 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" class="confirm-panel bg-slate-800 border border-rose-500/30 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
         <div class="flex items-start gap-4">
           <div class="w-10 h-10 shrink-0 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-7.82 13.5A2 2 0 004.2 20h15.6a2 2 0 001.73-3l-7.82-13.5a2 2 0 00-3.42.36z"/></svg>
@@ -1671,7 +1785,7 @@
 
     <div
       v-if="toast.visible"
-      class="fixed top-5 right-5 z-[70] max-w-sm w-[calc(100%-2.5rem)]"
+      class="mobile-toast fixed top-5 right-5 z-[70] max-w-sm w-[calc(100%-2.5rem)]"
       role="status"
       aria-live="polite"
     >
@@ -1688,7 +1802,7 @@
 
   <!-- Vue 3 核心逻辑 -->
   <script>
-    const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick } = Vue;
 
     createApp({
       setup() {
@@ -1712,6 +1826,25 @@
         let toastTimer = null;
         
         const tasks = ref([]);
+        const openTaskMoreId = ref(null);
+        const toggleTaskMoreMenu = (taskId) => {
+          openTaskMoreId.value = openTaskMoreId.value === taskId ? null : taskId;
+        };
+        const closeTaskMoreMenu = () => {
+          openTaskMoreId.value = null;
+        };
+        const handleTaskMoreMenuEscape = (event) => {
+          if (event.key === "Escape" && openTaskMoreId.value !== null) closeTaskMoreMenu();
+        };
+        const handleTaskMoreOutsideClick = (event) => {
+          if (openTaskMoreId.value !== null && !event.target.closest(".task-more-wrap")) closeTaskMoreMenu();
+        };
+        onMounted(() => window.addEventListener("keydown", handleTaskMoreMenuEscape));
+        onMounted(() => document.addEventListener("click", handleTaskMoreOutsideClick));
+        onUnmounted(() => {
+          window.removeEventListener("keydown", handleTaskMoreMenuEscape);
+          document.removeEventListener("click", handleTaskMoreOutsideClick);
+        });
         const scriptsList = ref([]);
         const sysStatus = ref({});
         const isRefreshing = ref(false);
@@ -2915,7 +3048,7 @@
 
         return {
           isAuthenticated, loginPassword, loginLoading, loginError, login, logout,
-          tasks, scriptsList, sysStatus, isRefreshing, fetchTasks,
+          tasks, openTaskMoreId, toggleTaskMoreMenu, closeTaskMoreMenu, scriptsList, sysStatus, isRefreshing, fetchTasks,
           showTaskModal, isEditing, currentForm, envRows, addEnvRow, removeEnvRow,
           saveTask, toggleTask, deleteTask, openCreateModal, openEditModal,
           confirmDialog, isConfirming, openConfirmDialog, closeConfirmDialog, submitConfirmDialog,
