@@ -137,8 +137,16 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
   <div id="app" v-cloak class="min-h-screen flex flex-col" @click="closeTaskMoreMenu">
 
+    <div v-if="isCheckingAuth || authCheckError" class="flex-1 flex flex-col items-center justify-center gap-4 p-4 text-sm">
+      <p v-if="isCheckingAuth" class="text-slate-400" role="status">正在验证登录状态…</p>
+      <template v-else>
+        <p class="text-rose-400" role="alert">{{ authCheckError }}</p>
+        <button type="button" @click="checkAuth" class="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-500">重试</button>
+      </template>
+    </div>
+
     <!-- 登录屏 -->
-    <div v-if="!isAuthenticated" class="flex-1 flex items-center justify-center p-4">
+    <div v-else-if="!isAuthenticated" class="flex-1 flex items-center justify-center p-4">
       <div class="mobile-login-panel bg-slate-800 border border-slate-700/80 rounded-2xl p-8 max-w-md w-full shadow-2xl backdrop-blur">
         <div class="text-center mb-6">
           <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-3 border border-indigo-500/30">
@@ -157,7 +165,7 @@
             <input 
               v-model="loginPassword" 
               type="password" 
-              placeholder="请输入 ADMIN_PASSWORD" 
+              placeholder="请输入管理员密码"
               required
               class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition"
             />
@@ -181,7 +189,7 @@
     <!-- 授权后的主操作台 -->
     <div v-else class="flex-1 flex flex-col">
       <!-- 顶部导航栏 -->
-      <header class="mobile-header bg-slate-800/80 border-b border-slate-700/60 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
+      <header class="mobile-header bg-slate-800/80 border-b border-slate-700/60 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div class="mobile-header-brand flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,19 +202,11 @@
               MiniCron
               <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Running</span>
             </h1>
-            <p class="text-xs text-slate-400">零注入风险 · 轻量定时中心</p>
+            <p class="text-xs text-slate-400">Python 定时任务管理</p>
           </div>
         </div>
 
-        <!-- 系统状态指标 -->
-        <div class="hidden md:flex items-center gap-4 text-xs font-mono text-slate-300">
-          <div class="flex items-center gap-1.5 bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 rounded-lg">
-            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-            <span>内存: <b>{{ sysStatus.memory_usage_mb || '--' }} MB</b></span>
-          </div>
-        </div>
-
-        <div class="mobile-header-actions flex items-center gap-2">
+        <div class="mobile-header-actions flex items-center gap-2 whitespace-nowrap">
           <!-- 脚本管理按钮 (核心资产) -->
           <button 
             @click="openScriptModal('list')" 
@@ -218,11 +218,19 @@
             <span class="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-full border border-indigo-500/30">{{ scriptsList.length }}</span>
           </button>
 
+          <button
+            @click="openEnvModal"
+            class="text-xs bg-slate-700/80 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl border border-slate-600/50 transition flex items-center gap-1.5 shadow-sm"
+          >
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            <span class="font-medium">全局环境变量</span>
+          </button>
+
           <!-- 统一系统设置中心按钮 -->
           <button 
             @click="openSettingsModal('notification')" 
             class="text-xs bg-slate-700/80 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl border border-slate-600/50 transition flex items-center gap-1.5 shadow-sm"
-            title="系统设置中心（通知与代理、环境变量、依赖管理、修改密码）"
+            title="系统设置中心（通知与代理、依赖管理、修改密码）"
           >
             <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <span class="font-medium">设置中心</span>
@@ -243,7 +251,8 @@
 
           <!-- 退出登录 -->
           <button 
-            @click="logout" 
+            @click="logout"
+            :disabled="isLoggingOut"
             class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 px-3 py-2 rounded-xl transition flex items-center gap-1"
             title="退出登录"
           >
@@ -258,7 +267,7 @@
         
         <!-- 操作与汇总条 -->
         <div class="mobile-summary flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
-          <div class="mobile-summary-counts flex items-center gap-4 text-sm">
+          <div v-if="tasksLoaded" class="mobile-summary-counts flex items-center gap-4 text-sm">
             <div>
               <span class="text-slate-400">任务总数:</span>
               <span class="font-bold text-white ml-1.5 text-base">{{ tasks.length }}</span>
@@ -277,7 +286,8 @@
 
           <div class="flex items-center gap-2.5 w-full sm:w-auto">
             <button 
-              @click="fetchTasks" 
+              @click="fetchTasks"
+              :disabled="isRefreshing"
               class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 p-2.5 rounded-xl transition text-xs flex items-center gap-1"
               title="刷新列表"
             >
@@ -294,7 +304,11 @@
         </div>
 
         <!-- 任务列表 -->
-        <div v-if="tasks.length === 0" class="text-center py-16 bg-slate-800/30 rounded-2xl border border-dashed border-slate-700">
+        <div v-if="taskListError" class="rounded-xl border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300" role="alert">
+          任务列表加载失败：{{ taskListError }}
+        </div>
+        <p v-else-if="!tasksLoaded" class="py-10 text-center text-sm text-slate-400" role="status">正在加载任务…</p>
+        <div v-if="tasksLoaded && !taskListError && tasks.length === 0" class="text-center py-16 bg-slate-800/30 rounded-2xl border border-dashed border-slate-700">
           <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 mx-auto flex items-center justify-center mb-3">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
           </div>
@@ -306,7 +320,7 @@
           </div>
         </div>
 
-        <div v-else class="grid grid-cols-1 gap-4">
+        <div v-else-if="tasks.length" class="grid grid-cols-1 gap-4">
           <div 
             v-for="task in tasks" 
             :key="task.id" 
@@ -427,7 +441,7 @@
         <div class="mobile-modal-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
             <h3 class="text-lg font-bold text-white">{{ isEditing ? '编辑定时任务' : '新建定时任务' }}</h3>
-            <button @click="showTaskModal = false" class="text-slate-400 hover:text-white">&times;</button>
+            <button @click="showTaskModal = false" :disabled="isSavingTask" class="text-slate-400 hover:text-white disabled:opacity-50">&times;</button>
           </div>
 
           <form @submit.prevent="saveTask" class="space-y-4">
@@ -546,9 +560,10 @@
             </div>
 
             <!-- 底部按钮 -->
+            <p v-if="taskSaveError" class="text-xs text-rose-400" role="alert">{{ taskSaveError }}</p>
             <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700">
-              <button type="button" @click="showTaskModal = false" class="text-xs text-slate-300 hover:text-white px-4 py-2">取消</button>
-              <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-5 py-2 rounded-xl transition">保存任务</button>
+              <button type="button" @click="showTaskModal = false" :disabled="isSavingTask" class="text-xs text-slate-300 hover:text-white px-4 py-2 disabled:opacity-50">取消</button>
+              <button type="submit" :disabled="isSavingTask" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-5 py-2 rounded-xl transition disabled:opacity-50">{{ isSavingTask ? '保存中…' : '保存任务' }}</button>
             </div>
           </form>
         </div>
@@ -918,20 +933,7 @@
                 <span v-if="notifyForm.telegram_enabled" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
               </button>
 
-              <!-- 2. 全局环境变量 -->
-              <button 
-                @click="switchSettingsTab('env')" 
-                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
-                :class="activeSettingsTab === 'env' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'text-slate-300 hover:bg-slate-800/80'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <svg class="w-4 h-4" :class="activeSettingsTab === 'env' ? 'text-white' : 'text-emerald-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                  <span>全局环境变量</span>
-                </div>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full" :class="activeSettingsTab === 'env' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'">{{ envVarsList.length }}</span>
-              </button>
-
-              <!-- 3. 依赖模块管理 -->
+              <!-- 2. 依赖模块管理 -->
               <button 
                 @click="switchSettingsTab('packages')" 
                 class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
@@ -944,7 +946,7 @@
                 <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full" :class="activeSettingsTab === 'packages' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'">{{ packagesList.length }}</span>
               </button>
 
-              <!-- 4. 修改管理员密码 -->
+              <!-- 3. 修改管理员密码 -->
               <button 
                 @click="switchSettingsTab('password')" 
                 class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition text-left"
@@ -1275,108 +1277,7 @@
               </form>
             </div>
 
-            <!-- 面板 2: 全局环境变量 -->
-            <div v-if="activeSettingsTab === 'env'" class="settings-content flex-1 flex flex-col min-h-0 p-6 space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                  </div>
-                  <div>
-                    <h3 class="text-base font-bold text-white">全局环境变量管理</h3>
-                    <p class="text-xs text-slate-400">已启用的变量将在所有任务脚本执行时自动注入子进程 (os.environ)</p>
-                  </div>
-                </div>
-                <button @click="showSettingsModal = false" class="hidden md:block text-slate-400 hover:text-white text-xl leading-none">&times;</button>
-              </div>
-
-              <!-- 操作栏：添加按钮 -->
-              <div class="flex items-center justify-between gap-3">
-                <div class="text-xs text-slate-400 font-mono">共 {{ envVarsList.length }} 个全局变量</div>
-                <button 
-                  @click="openEnvFormModal()" 
-                  class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                  <span>添加环境变量</span>
-                </button>
-              </div>
-
-              <!-- 变量列表 -->
-              <div class="flex-1 overflow-y-auto space-y-2">
-                <div v-if="envVarsList.length === 0" class="text-center py-12 text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-dashed border-slate-700">
-                  暂未添加任何全局环境变量，点击右上角「添加环境变量」新增。
-                </div>
-                <div 
-                  v-for="item in envVarsList" 
-                  :key="item.id"
-                  class="bg-slate-900/80 border border-slate-700/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-600 transition"
-                >
-                  <div class="space-y-1 flex-1">
-                    <div class="flex items-center gap-2">
-                  <span class="env-key min-w-0 break-all font-mono text-sm font-bold text-indigo-300">{{ item.key }}</span>
-                      <span 
-                        :class="item.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'"
-                        class="text-[10px] px-2 py-0.5 rounded-full border font-mono font-medium"
-                      >
-                        {{ item.enabled ? '生效中' : '已停用' }}
-                      </span>
-                      <span v-if="item.description" class="text-xs text-slate-400 font-sans">
-                        — {{ item.description }}
-                      </span>
-                    </div>
-                    
-                    <div class="flex items-center gap-2 text-xs font-mono text-slate-300">
-                      <span class="text-slate-500">值:</span>
-                      <span class="env-value bg-slate-950 px-2 py-0.5 rounded border border-slate-800 select-all">
-                        {{ showSecretEnv[item.id] ? item.value : maskSecret(item.value) }}
-                      </span>
-                      <button 
-                        type="button" 
-                        @click="toggleSecret(item.id)" 
-                        class="text-[11px] text-slate-400 hover:text-slate-200"
-                        :title="showSecretEnv[item.id] ? '隐藏明文' : '显示明文'"
-                      >
-                        {{ showSecretEnv[item.id] ? '隐藏' : '显示' }}
-                      </button>
-                      <button 
-                        type="button" 
-                        @click="copyCode(item.value)" 
-                        class="text-[11px] text-slate-400 hover:text-slate-200"
-                        title="复制变量值"
-                      >
-                        复制
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- 操作 -->
-                  <div class="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
-                    <button 
-                      @click="toggleEnvVar(item)" 
-                      :class="item.enabled ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'"
-                      class="text-xs border px-2.5 py-1 rounded-lg transition"
-                    >
-                      {{ item.enabled ? '禁用' : '启用' }}
-                    </button>
-                    <button 
-                      @click="openEnvFormModal(item)" 
-                      class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-700 transition"
-                    >
-                      编辑
-                    </button>
-                    <button 
-                      @click="deleteEnvVar(item)" 
-                      class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs px-2.5 py-1 rounded-lg transition"
-                    >
-                      删除
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 面板 3: Python 依赖管理 -->
+            <!-- 面板 2: Python 依赖管理 -->
             <div v-if="activeSettingsTab === 'packages'" class="settings-content flex-1 flex flex-col min-h-0 p-6 space-y-4">
               <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-3">
@@ -1473,7 +1374,7 @@
               </div>
             </div>
 
-            <!-- 面板 4: 修改管理员密码 -->
+            <!-- 面板 3: 修改管理员密码 -->
             <div v-if="activeSettingsTab === 'password'" class="settings-content flex-1 flex flex-col min-h-0 p-6 space-y-4 max-w-md">
               <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-2.5">
@@ -1543,7 +1444,110 @@
         </div>
       </div>
 
-      <!-- 添加/编辑环境变量小弹窗 (z-[60]，高于设置中心 z-50) -->
+      <!-- 全局环境变量管理 -->
+      <div v-if="showEnvModal" class="mobile-modal-backdrop fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+        <section role="dialog" aria-modal="true" aria-labelledby="env-modal-title" class="mobile-modal-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full h-[80vh] max-h-[680px] p-6 shadow-2xl flex flex-col gap-4">
+          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-700 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 shrink-0 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+              </div>
+              <div>
+                <h3 id="env-modal-title" class="text-base font-bold text-white">全局环境变量管理</h3>
+                <p class="text-xs text-slate-400">已启用的变量将在所有任务脚本执行时自动注入子进程 (os.environ)</p>
+              </div>
+            </div>
+            <button type="button" @click="showEnvModal = false" aria-label="关闭全局环境变量" class="shrink-0 text-slate-400 hover:text-white text-xl leading-none sm:px-2">&times;</button>
+          </div>
+
+          <!-- 操作栏：添加按钮 -->
+          <div class="flex shrink-0 items-center justify-between gap-3">
+            <div class="text-xs text-slate-400 font-mono">共 {{ envVarsList.length }} 个全局变量</div>
+            <button
+              @click="openEnvFormModal()"
+              class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span>添加环境变量</span>
+            </button>
+          </div>
+
+          <!-- 变量列表 -->
+          <div class="min-h-0 flex-1 overflow-y-auto space-y-2">
+            <div v-if="envVarsList.length === 0" class="text-center py-12 text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-dashed border-slate-700">
+              暂未添加任何全局环境变量，点击右上角「添加环境变量」新增。
+            </div>
+            <div
+              v-for="item in envVarsList"
+              :key="item.id"
+              class="bg-slate-900/80 border border-slate-700/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-600 transition"
+            >
+              <div class="space-y-1 min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="env-key min-w-0 break-all font-mono text-sm font-bold text-indigo-300">{{ item.key }}</span>
+                  <span
+                    :class="item.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'"
+                    class="text-[10px] px-2 py-0.5 rounded-full border font-mono font-medium"
+                  >
+                    {{ item.enabled ? '生效中' : '已停用' }}
+                  </span>
+                  <span v-if="item.description" class="text-xs text-slate-400 font-sans">
+                    — {{ item.description }}
+                  </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
+                  <span class="text-slate-500">值:</span>
+                  <span class="env-value min-w-0 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 select-all">
+                    {{ showSecretEnv[item.id] ? item.value : maskSecret(item.value) }}
+                  </span>
+                  <button
+                    type="button"
+                    @click="toggleSecret(item.id)"
+                    class="text-[11px] text-slate-400 hover:text-slate-200"
+                    :title="showSecretEnv[item.id] ? '隐藏明文' : '显示明文'"
+                  >
+                    {{ showSecretEnv[item.id] ? '隐藏' : '显示' }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="copyCode(item.value)"
+                    class="text-[11px] text-slate-400 hover:text-slate-200"
+                    title="复制变量值"
+                  >
+                    复制
+                  </button>
+                </div>
+              </div>
+
+              <!-- 操作 -->
+              <div class="flex shrink-0 items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                <button
+                  @click="toggleEnvVar(item)"
+                  :class="item.enabled ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'"
+                  class="text-xs border px-2.5 py-1 rounded-lg transition"
+                >
+                  {{ item.enabled ? '禁用' : '启用' }}
+                </button>
+                <button
+                  @click="openEnvFormModal(item)"
+                  class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-700 transition"
+                >
+                  编辑
+                </button>
+                <button
+                  @click="deleteEnvVar(item)"
+                  class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs px-2.5 py-1 rounded-lg transition"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 添加/编辑环境变量小弹窗 (z-[60]，高于变量列表 z-50) -->
       <div v-if="showEnvFormModal" class="mobile-modal-backdrop fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="mobile-modal-panel bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -1748,7 +1752,7 @@
 
     <!-- 全局确认框与消息提示，始终位于所有浮层之上 -->
     <div
-      v-if="confirmDialog.visible"
+      v-if="isAuthenticated && confirmDialog.visible"
       @click.self="closeConfirmDialog"
       class="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4"
     >
@@ -1784,7 +1788,7 @@
     </div>
 
     <div
-      v-if="toast.visible"
+      v-if="isAuthenticated && toast.visible"
       class="mobile-toast fixed top-5 right-5 z-[70] max-w-sm w-[calc(100%-2.5rem)]"
       role="status"
       aria-live="polite"
@@ -1807,9 +1811,13 @@
     createApp({
       setup() {
         const isAuthenticated = ref(false);
+        const isCheckingAuth = ref(true);
+        const authCheckError = ref("");
         const loginPassword = ref("");
         const loginLoading = ref(false);
         const loginError = ref("");
+        const isLoggingOut = ref(false);
+        let sessionVersion = 0;
 
         // 全局确认框与非阻断消息提示
         const confirmDialog = reactive({
@@ -1846,11 +1854,15 @@
           document.removeEventListener("click", handleTaskMoreOutsideClick);
         });
         const scriptsList = ref([]);
-        const sysStatus = ref({});
         const isRefreshing = ref(false);
+        const tasksLoaded = ref(false);
+        const taskListError = ref("");
+        let taskListRequestId = 0;
 
         // 任务编辑/新建模态框
         const showTaskModal = ref(false);
+        const isSavingTask = ref(false);
+        const taskSaveError = ref("");
         const isEditing = ref(false);
         const currentForm = reactive({
           id: null,
@@ -1872,6 +1884,7 @@
         const currentLogContent = ref("");
         const isLogStreaming = ref(false);
         let sseSource = null;
+        let logRequestVersion = 0;
 
         const isCurrentTaskRunning = computed(() => {
           if (!activeLogTask.value) return false;
@@ -1907,7 +1920,7 @@
 
         // 统一系统设置中心
         const showSettingsModal = ref(false);
-        const activeSettingsTab = ref('notification'); // 'notification' | 'env' | 'packages' | 'password'
+        const activeSettingsTab = ref('notification'); // 'notification' | 'packages' | 'password'
 
         // 修改密码
         const showChangePasswordModal = ref(false);
@@ -1990,34 +2003,49 @@
           return match ? match[1] : null;
         });
 
-        const getAuthHeaders = () => {
-          const token = localStorage.getItem("minicron_token");
-          return token ? { "Authorization": `Bearer ${token}` } : {};
+        const getAuthToken = () => localStorage.getItem("minicron_token");
+
+        const clearSession = (message = "") => {
+          sessionVersion++;
+          localStorage.removeItem("minicron_token");
+          loginPassword.value = "";
+          loginError.value = message;
+          isAuthenticated.value = false;
+          tasks.value = [];
+          scriptsList.value = [];
+          tasksLoaded.value = false;
+          taskListError.value = "";
+          isRefreshing.value = false;
+          showTaskModal.value = false;
+          showHelpModal.value = false;
+          confirmDialog.visible = false;
+          confirmDialog.action = null;
+          hideToast();
+          resetLogView();
         };
 
         const apiRequest = async (url, options = {}) => {
-          options.headers = {
-            ...options.headers,
-            ...getAuthHeaders(),
-            "Content-Type": "application/json"
-          };
-          const res = await fetch(url, options);
+          const version = sessionVersion;
+          const token = getAuthToken();
+          const headers = { ...options.headers };
+          if (typeof options.body === "string") headers["Content-Type"] = "application/json";
+          if (token) headers.Authorization = `Bearer ${token}`;
+          const res = await fetch(url, { ...options, headers });
           if (res.status === 401) {
-            isAuthenticated.value = false;
-            localStorage.removeItem("minicron_token");
-            throw new Error("会话已失效，请重新登录");
+            const message = "会话已失效，请重新登录";
+            if (version === sessionVersion && token === getAuthToken()) {
+              clearSession(isAuthenticated.value || token ? message : "");
+            }
+            throw Object.assign(new Error(message), { status: 401 });
           }
           if (!res.ok) {
-            let errorText = "";
-            try {
-              const errJson = await res.json();
-              errorText = errJson.detail || errJson.message || JSON.stringify(errJson);
-            } catch (_) {
-              errorText = await res.text();
-            }
-            throw new Error(errorText || `HTTP ${res.status}: 请求失败`);
+            const body = await res.json().catch(() => null);
+            const detail = Array.isArray(body?.detail) ? body.detail.map(item => item.msg).join("；") : body?.detail;
+            throw new Error(detail || body?.message || `HTTP ${res.status}: 请求失败`);
           }
-          return res.json();
+          const data = await res.json();
+          if (version !== sessionVersion) throw new Error("会话已切换，请重试");
+          return data;
         };
 
         const showToast = (message, type = "info") => {
@@ -2070,18 +2098,22 @@
 
         // 检查登录状态
         const checkAuth = async () => {
+          isCheckingAuth.value = true;
+          authCheckError.value = "";
           try {
             const data = await apiRequest("/api/auth/me");
-            if (data.code === 0) {
-              isAuthenticated.value = true;
-              loadInitialData();
-            }
+            if (data.code !== 0 || data.data?.authenticated !== true) throw new Error("会话校验响应异常");
+            isAuthenticated.value = true;
+            loadInitialData();
           } catch (e) {
-            isAuthenticated.value = false;
+            if (e.status !== 401) authCheckError.value = "暂时无法验证登录状态，请重试。";
+          } finally {
+            isCheckingAuth.value = false;
           }
         };
 
         const login = async () => {
+          if (loginLoading.value) return;
           loginLoading.value = true;
           loginError.value = "";
           try {
@@ -2093,6 +2125,8 @@
             const data = await res.json();
             if (data.code === 0) {
               localStorage.setItem("minicron_token", data.data.token);
+              sessionVersion++;
+              loginPassword.value = "";
               isAuthenticated.value = true;
               loadInitialData();
             } else {
@@ -2106,22 +2140,43 @@
         };
 
         const logout = async () => {
-          await apiRequest("/api/auth/logout", { method: "POST" });
-          localStorage.removeItem("minicron_token");
-          isAuthenticated.value = false;
+          if (isLoggingOut.value) return;
+          isLoggingOut.value = true;
+          try {
+            await apiRequest("/api/auth/logout", { method: "POST" });
+            clearSession();
+          } catch (e) {
+            if (isAuthenticated.value) showToast(e.message || "退出失败，请重试", "error");
+          } finally {
+            isLoggingOut.value = false;
+          }
         };
 
-        const loadInitialData = async () => {
-          await Promise.all([fetchTasks(), fetchScripts(), fetchSystemStatus(), fetchEnvVars(), fetchPackages()]);
+        const loadInitialData = () => {
+          fetchTasks();
+          fetchPackages();
+          const version = sessionVersion;
+          fetchScripts().catch(e => {
+            if (version === sessionVersion) showToast(`脚本列表加载失败：${e.message}`, "error");
+          });
         };
 
         const fetchTasks = async () => {
+          const version = sessionVersion;
+          const requestId = ++taskListRequestId;
+          const isCurrent = () => version === sessionVersion && requestId === taskListRequestId;
           isRefreshing.value = true;
           try {
             const res = await apiRequest("/api/tasks");
-            if (res.code === 0) tasks.value = res.data;
+            if (!isCurrent()) return;
+            if (res.code !== 0) throw new Error(res.message || "请求失败");
+            tasks.value = res.data;
+            tasksLoaded.value = true;
+            taskListError.value = "";
+          } catch (e) {
+            if (isCurrent()) taskListError.value = e.message || "请求失败";
           } finally {
-            isRefreshing.value = false;
+            if (isCurrent()) isRefreshing.value = false;
           }
         };
 
@@ -2130,37 +2185,34 @@
           if (res.code === 0) scriptsList.value = res.data;
         };
 
-        const fetchSystemStatus = async () => {
-          const res = await apiRequest("/api/system/status");
-          if (res.code === 0) sysStatus.value = res.data;
-        };
-
         // Cron 预演
         let cronTimer = null;
+        let cronPreviewVersion = 0;
         const onCronChange = () => {
           clearTimeout(cronTimer);
+          const version = ++cronPreviewVersion;
+          const expression = currentForm.cron_expression;
+          cronPreviewRuns.value = [];
+          cronPreviewValid.value = null;
+          if (!expression) return;
           cronTimer = setTimeout(async () => {
-            if (!currentForm.cron_expression) return;
             try {
               const res = await apiRequest("/api/tools/cron-preview", {
                 method: "POST",
-                body: JSON.stringify({ cron_expression: currentForm.cron_expression })
+                body: JSON.stringify({ cron_expression: expression })
               });
-              if (res.data && res.data.is_valid) {
-                cronPreviewRuns.value = res.data.next_runs;
-                cronPreviewValid.value = true;
-              } else {
-                cronPreviewRuns.value = [];
-                cronPreviewValid.value = false;
-              }
+              if (version !== cronPreviewVersion) return;
+              cronPreviewValid.value = Boolean(res.data?.is_valid);
+              cronPreviewRuns.value = cronPreviewValid.value ? res.data.next_runs : [];
             } catch (e) {
-              cronPreviewValid.value = false;
+              if (version === cronPreviewVersion) cronPreviewValid.value = false;
             }
           }, 300);
         };
 
         // 任务表单
         const openCreateModal = () => {
+          taskSaveError.value = "";
           isEditing.value = false;
           currentForm.id = null;
           currentForm.name = "";
@@ -2174,6 +2226,7 @@
         };
 
         const openEditModal = (task) => {
+          taskSaveError.value = "";
           isEditing.value = true;
           currentForm.id = task.id;
           currentForm.name = task.name;
@@ -2191,6 +2244,9 @@
         const removeEnvRow = (idx) => envRows.value.splice(idx, 1);
 
         const saveTask = async () => {
+          if (isSavingTask.value) return;
+          isSavingTask.value = true;
+          taskSaveError.value = "";
           const env_vars = {};
           envRows.value.forEach(row => {
             if (row.key.trim()) env_vars[row.key.trim()] = row.value;
@@ -2205,28 +2261,32 @@
             env_vars
           };
 
-          if (isEditing.value) {
-            await apiRequest(`/api/tasks/${currentForm.id}`, {
-              method: "PUT",
+          try {
+            const url = isEditing.value ? `/api/tasks/${currentForm.id}` : "/api/tasks";
+            const res = await apiRequest(url, {
+              method: isEditing.value ? "PUT" : "POST",
               body: JSON.stringify(payload)
             });
-          } else {
-            await apiRequest("/api/tasks", {
-              method: "POST",
-              body: JSON.stringify(payload)
-            });
+            if (res.code !== 0) throw new Error(res.message || "保存任务失败");
+            showTaskModal.value = false;
+            await fetchTasks();
+          } catch (e) {
+            taskSaveError.value = e.message || "保存任务失败";
+          } finally {
+            isSavingTask.value = false;
           }
-
-          showTaskModal.value = false;
-          await fetchTasks();
         };
 
         const toggleTask = async (task) => {
-          await apiRequest(`/api/tasks/${task.id}/toggle`, {
-            method: "POST",
-            body: JSON.stringify({ enabled: !task.enabled })
-          });
-          await fetchTasks();
+          try {
+            await apiRequest(`/api/tasks/${task.id}/toggle`, {
+              method: "POST",
+              body: JSON.stringify({ enabled: !task.enabled })
+            });
+            await fetchTasks();
+          } catch (e) {
+            showToast(e.message || "任务状态更新失败", "error");
+          }
         };
 
         const deleteTask = (task) => {
@@ -2256,91 +2316,111 @@
           }
         };
 
-        // 查看日志
+        const stopLogStream = () => {
+          if (sseSource) sseSource.close();
+          sseSource = null;
+          isLogStreaming.value = false;
+        };
+
+        const resetLogView = () => {
+          logRequestVersion++;
+          stopLogStream();
+          showLogModal.value = false;
+          activeLogTask.value = null;
+          executionsList.value = [];
+          selectedExecutionId.value = "";
+          currentLogContent.value = "";
+        };
+
+        const fetchLogHistory = async (taskId) => {
+          const res = await apiRequest(`/api/tasks/${taskId}/executions?limit=15`);
+          if (res.code !== 0) throw new Error(res.message || "加载执行记录失败");
+          return res.data;
+        };
+
         const viewTaskLogs = async (task, targetExecutionId = null) => {
+          resetLogView();
+          const version = logRequestVersion;
           activeLogTask.value = task;
           showLogModal.value = true;
           currentLogContent.value = "正在加载日志...";
 
-          const res = await apiRequest(`/api/tasks/${task.id}/executions?limit=15`);
-          if (res.code === 0) {
-            executionsList.value = res.data;
-            const chosenId = targetExecutionId || (executionsList.value[0]?.id);
+          try {
+            const history = await fetchLogHistory(task.id);
+            if (version !== logRequestVersion) return;
+            executionsList.value = history;
+            const chosenId = targetExecutionId || history[0]?.id;
             if (chosenId) {
               await selectExecution({ id: chosenId });
             } else {
               currentLogContent.value = "（该任务尚无历史执行记录）";
             }
+          } catch (e) {
+            if (version === logRequestVersion) currentLogContent.value = `加载执行记录失败：${e.message}`;
           }
         };
 
         const selectExecution = async (exec) => {
+          const version = ++logRequestVersion;
+          stopLogStream();
           selectedExecutionId.value = exec.id;
           currentLogContent.value = "正在获取日志内容...";
-          
-          if (sseSource) {
-            sseSource.close();
-            sseSource = null;
-          }
 
-          const res = await apiRequest(`/api/executions/${exec.id}/log`);
-          if (res.code === 0) {
+          try {
+            const res = await apiRequest(`/api/executions/${exec.id}/log`);
+            if (version !== logRequestVersion) return;
+            if (res.code !== 0) throw new Error(res.message || "请求失败");
             currentLogContent.value = res.data.content;
-            
-            // 立即同步更新 executionsList 中当前项的真实状态
+
             const currentItem = executionsList.value.find(item => item.id === exec.id);
             if (currentItem && res.data.status) {
               currentItem.status = res.data.status;
             }
 
             if (res.data.status === "RUNNING") {
+              const source = new EventSource(`/api/executions/${exec.id}/stream`);
+              sseSource = source;
               isLogStreaming.value = true;
-              sseSource = new EventSource(`/api/executions/${exec.id}/stream`);
-              sseSource.onmessage = async (event) => {
-                try {
-                  const msg = JSON.parse(event.data);
-                  if (msg.finished) {
-                    isLogStreaming.value = false;
-                    if (sseSource) {
-                      sseSource.close();
-                      sseSource = null;
-                    }
-                    await fetchTasks();
-                    if (activeLogTask.value) {
-                      const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
-                      if (execRes.code === 0) executionsList.value = execRes.data;
-                    }
-                  } else {
-                    currentLogContent.value += msg.line;
-                  }
-                } catch (_) {}
+              const finish = () => {
+                if (sseSource !== source) return;
+                stopLogStream();
+                refreshLogHistory();
+                fetchTasks();
               };
-              sseSource.onerror = async () => {
-                if (sseSource) {
-                  sseSource.close();
-                  sseSource = null;
-                }
-                isLogStreaming.value = false;
-                await fetchTasks();
-                if (activeLogTask.value) {
-                  const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
-                  if (execRes.code === 0) executionsList.value = execRes.data;
-                }
+              source.onmessage = (event) => {
+                if (sseSource !== source) return;
+                const msg = JSON.parse(event.data);
+                if (msg.finished) finish();
+                else if (msg.line) currentLogContent.value += msg.line;
               };
-            } else {
-              isLogStreaming.value = false;
-              await fetchTasks();
+              source.onerror = finish;
             }
+          } catch (e) {
+            if (version === logRequestVersion) currentLogContent.value = `加载日志失败：${e.message}`;
+          }
+        };
+
+        const refreshLogHistory = async () => {
+          const task = activeLogTask.value;
+          if (!task) return;
+          const version = logRequestVersion;
+          try {
+            const history = await fetchLogHistory(task.id);
+            if (version !== logRequestVersion) return;
+            const selectedId = selectedExecutionId.value;
+            const wasRunning = executionsList.value.some(item => item.id === selectedId && item.status === "RUNNING");
+            const current = history.find(item => item.id === selectedId);
+            executionsList.value = history;
+            if ((wasRunning || isLogStreaming.value) && current && current.status !== "RUNNING") {
+              await selectExecution(current);
+            }
+          } catch (e) {
+            if (version === logRequestVersion) console.error("刷新执行记录失败", e);
           }
         };
 
         const closeLogModal = () => {
-          showLogModal.value = false;
-          if (sseSource) {
-            sseSource.close();
-            sseSource = null;
-          }
-          isLogStreaming.value = false;
+          resetLogView();
           fetchTasks();
         };
 
@@ -2411,15 +2491,10 @@
             formData.append("file", selectedFile.value);
             formData.append("overwrite", uploadOverwrite.value);
 
-            const token = localStorage.getItem("minicron_token");
-            const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-
-            const res = await fetch("/api/scripts/upload", {
+            const data = await apiRequest("/api/scripts/upload", {
               method: "POST",
-              headers,
               body: formData
             });
-            const data = await res.json();
             if (data.code === 0) {
               showToast(data.message || "脚本上传成功", "success");
               if (showTaskModal.value) {
@@ -2610,7 +2685,8 @@
         };
 
         const openEnvModal = () => {
-          openSettingsModal('env');
+          showEnvModal.value = true;
+          fetchEnvVars();
         };
 
         const openEnvFormModal = (item = null) => {
@@ -2838,27 +2914,18 @@
           }
         };
 
-        const openSettingsModal = async (tab = 'notification') => {
+        const switchSettingsTab = async (tab) => {
           activeSettingsTab.value = tab;
-          showSettingsModal.value = true;
           if (tab === 'notification') {
             await fetchNotificationSettings();
-          } else if (tab === 'env') {
-            await fetchEnvVars();
           } else if (tab === 'packages') {
             await fetchPackages();
           }
         };
 
-        const switchSettingsTab = async (tab) => {
-          activeSettingsTab.value = tab;
-          if (tab === 'notification') {
-            await fetchNotificationSettings();
-          } else if (tab === 'env') {
-            await fetchEnvVars();
-          } else if (tab === 'packages') {
-            await fetchPackages();
-          }
+        const openSettingsModal = (tab = 'notification') => {
+          showSettingsModal.value = true;
+          return switchSettingsTab(tab);
         };
 
         const openNotificationModal = () => openSettingsModal('notification');
@@ -3016,40 +3083,29 @@
 
         onMounted(() => {
           checkAuth();
-          // 定时轮询：常规每 10 秒同步系统状态与任务列表
+          // 定时轮询：常规每 10 秒同步任务列表
           setInterval(() => {
-            if (isAuthenticated.value) {
-              fetchSystemStatus();
+            if (isAuthenticated.value && !isRefreshing.value) {
               fetchTasks();
             }
           }, 10000);
 
           // 自适应短轮询：若存在运行中的任务或正在流式监听日志，每 2 秒同步一次状态直至完成
           setInterval(async () => {
-            if (isAuthenticated.value && (tasks.value.some(t => t.is_running) || isLogStreaming.value)) {
+            const isSelectedExecutionRunning = activeLogTask.value && executionsList.value.some(
+              item => item.id === selectedExecutionId.value && item.status === "RUNNING"
+            );
+            if (isAuthenticated.value && !isRefreshing.value && (tasks.value.some(t => t.is_running) || isSelectedExecutionRunning)) {
               await fetchTasks();
-              if (showLogModal.value && activeLogTask.value) {
-                const execRes = await apiRequest(`/api/tasks/${activeLogTask.value.id}/executions?limit=15`);
-                if (execRes.code === 0) {
-                  executionsList.value = execRes.data;
-                  const cur = executionsList.value.find(item => item.id === selectedExecutionId.value);
-                  if (cur && cur.status !== 'RUNNING' && isLogStreaming.value) {
-                    isLogStreaming.value = false;
-                    if (sseSource) {
-                      sseSource.close();
-                      sseSource = null;
-                    }
-                  }
-                }
-              }
+              await refreshLogHistory();
             }
           }, 2000);
         });
 
         return {
-          isAuthenticated, loginPassword, loginLoading, loginError, login, logout,
-          tasks, openTaskMoreId, toggleTaskMoreMenu, closeTaskMoreMenu, scriptsList, sysStatus, isRefreshing, fetchTasks,
-          showTaskModal, isEditing, currentForm, envRows, addEnvRow, removeEnvRow,
+          isAuthenticated, isCheckingAuth, authCheckError, checkAuth, loginPassword, loginLoading, loginError, isLoggingOut, login, logout,
+          tasks, tasksLoaded, taskListError, openTaskMoreId, toggleTaskMoreMenu, closeTaskMoreMenu, scriptsList, isRefreshing, fetchTasks,
+          showTaskModal, isEditing, isSavingTask, taskSaveError, currentForm, envRows, addEnvRow, removeEnvRow,
           saveTask, toggleTask, deleteTask, openCreateModal, openEditModal,
           confirmDialog, isConfirming, openConfirmDialog, closeConfirmDialog, submitConfirmDialog,
           toast, showToast, hideToast,

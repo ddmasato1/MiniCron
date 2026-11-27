@@ -1,10 +1,12 @@
-import os
 from pathlib import Path
-from pydantic_settings import BaseSettings
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
+
     APP_NAME: str = "MiniCron"
-    APP_VERSION: str = "1.2.0"
+    APP_VERSION: str = "2.0.0"
     DEBUG: bool = False
 
     # Server binding
@@ -12,8 +14,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Security
-    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "minicron-super-secure-secret-key-change-in-prod")
+    ADMIN_PASSWORD: SecretStr = Field(min_length=12)
+    SECRET_KEY: SecretStr = Field(min_length=32)
     TOKEN_EXPIRE_DAYS: int = 7
 
     # Directories
@@ -22,10 +24,6 @@ class Settings(BaseSettings):
     LOGS_DIR: Path = DATA_DIR / "logs"
     SCRIPTS_DIR: Path = BASE_DIR / "scripts"
     DB_PATH: Path = DATA_DIR / "minicron.db"
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
 
 settings = Settings()
 

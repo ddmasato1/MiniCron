@@ -9,16 +9,26 @@ venv/
 ENV/
 .venv
 
-# Runtime Data
-data/minicron.db
-data/minicron.db-wal
-data/minicron.db-shm
-data/logs/*
-!data/logs/.gitkeep
+# Runtime data and exports
+/data/*
+!/data/logs/
+/data/logs/*
+!/data/logs/.gitkeep
+*.log
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite*
 
-# Environment variables
-.env
-.env.local
+# Local credentials
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
 
 # IDE & OS
 .DS_Store

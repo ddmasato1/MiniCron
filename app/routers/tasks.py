@@ -244,7 +244,8 @@ async def get_execution_log(execution_id: str):
 
     log_path = settings.LOGS_DIR / record["log_path"]
     if not log_path.exists():
-        return ApiResponse(data={"content": "（暂无日志或日志文件已被清理）"})
+        content = "" if record["status"] == "RUNNING" else "（暂无日志或日志文件已被清理）"
+        return ApiResponse(data={"content": content, "status": record["status"]})
 
     try:
         content = log_path.read_text(encoding="utf-8", errors="replace")

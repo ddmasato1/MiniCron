@@ -30,8 +30,8 @@ RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua
 
 # 复制应用代码、示例脚本与文档
 COPY app/ ./app/
-COPY scripts/ ./scripts/
-COPY docs/ ./docs/
+COPY scripts/notify.py ./scripts/notify.py
+COPY docs/help.md ./docs/help.md
 
 # 创建持久化日志目录
 RUN mkdir -p /app/data/logs

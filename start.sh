@@ -21,7 +21,7 @@ echo "🕒 正在启动 MiniCron 任务调度与可视化控制台..."
 echo "🐍 Python 解释器: $PYTHON_EXEC"
 echo "📁 脚本目录: $DIR/scripts"
 echo "🌐 控制台地址: http://0.0.0.0:8000"
-echo "🔑 默认密码: admin123 (可通过环境变量 ADMIN_PASSWORD 自定义)"
+echo "🔑 请在 .env 或环境变量中配置 ADMIN_PASSWORD 和 SECRET_KEY"
 echo "=================================================="
 
 exec "$PYTHON_EXEC" -m app.main

@@ -1,210 +1,114 @@
-# MiniCron 🕒
+# MiniCron
 
-> **超轻量、高安全、极简易用的 Python 定时任务可视化管理系统**  
-> 专为个人日常签到、数据抓取等小型定时脚本打造，彻底替代臃肿且存在安全隐患的传统面板。
+MiniCron 是面向个人和小型服务器的 Python 定时任务控制台，适合日常签到、数据采集和运维脚本。通过浏览器配置 Cron、手动执行任务、管理脚本并查看运行日志。
 
-![MiniCron 任务调度控制台](docs/images/1.png)
+## 界面预览
 
----
+![MiniCron 界面预览。上排是任务控制台和 Cron 预演，下排是脚本管理和执行日志。](docs/images/overview.png)
 
-## 🖼️ 界面预览
+查看原图：[任务控制台](docs/images/dashboard.jpg) · [新建任务与 Cron 预演](docs/images/task-editor.jpg) · [脚本管理](docs/images/scripts.jpg) · [执行历史与日志](docs/images/execution-log.jpg)
 
-### 脚本管理
+## 功能亮点
 
-![MiniCron 脚本管理中心](docs/images/2.png)
+- **轻量部署**：内置 Web 控制台和 SQLite，使用一个服务端口。
+- **定时任务**：预演未来 5 次 Cron 触发时间，支持启停、手动运行和超时限制。
+- **脚本管理**：在线编辑、粘贴或上传 Python 脚本。任务变量可覆盖同名全局环境变量。
+- **日志与诊断**：查看实时输出和历史记录，可从日志窗口重新运行任务。检测到缺失模块时，可在界面安装依赖。
+- **系统设置**：管理 Python 依赖、管理员密码和 Telegram 通知。自定义依赖在容器重建后按记录恢复。
 
-### 通知与代理
-
-![MiniCron 通知与代理设置](docs/images/3.png)
-
-### 全局环境变量
-
-![MiniCron 全局环境变量管理](docs/images/4.png)
-
-### Python 依赖管理
-
-![MiniCron Python 依赖与模块管理](docs/images/5.png)
-
-### 内置配置与使用指南
-
-![MiniCron 配置与使用指南](docs/images/6.png)
-
----
-
-## 💡 为什么选择 MiniCron？
-
-很多开发者在小型 Linux 服务器或 NAS 上仅需定时运行 3~5 个 Python 签到或自动化脚本。过去常使用的**青龙面板**等传统工具多为重型设计，内存开销动辄 500MB~1.5GB，且历史安全隐患较多。
-
-**MiniCron** 专为替代这类重型面板而生，采用极简设计理念：
-* ⚡ **超低开销**：单 Python 进程托管 Web 与调度，常规内存占用通常低于 **100MB**（实际占用取决于任务与依赖）。
-* 🛡️ **安全防注入**：禁用一切系统 Shell 拼接执行，白名单隔离脚本路径，杜绝 RCE 与目录穿越。
-* 🎯 **开箱即用**：内置 SQLite 与免编译现代化 Web UI，单个端口搞定所有服务，零中间件依赖。
-
----
-
-## 📁 规范工程目录
+## 项目目录
 
 ```text
 MiniCron/
-├── docs/                      # 核心规范与设计文档
-│   ├── PRD.md                 # 产品需求规格说明书
-│   ├── ARCHITECTURE.md        # 系统架构设计方案 (含 Mermaid 拓扑与 E-R 图)
-│   ├── API_SPEC.md            # RESTful API 接口规范
-│   ├── help.md                # 用户配置与使用指南 (FAQ、通知接入、Cron速查)
-│   └── images/                 # README 界面预览截图
-├── app/                       # 核心业务源码 (FastAPI)
-│   ├── core/                  # 配置管理、APScheduler 调度生命周期、PBKDF2 安全鉴权
-│   ├── models/                # SQLite 数据模型与 Pydantic 契约
-│   ├── routers/               # 任务/执行/系统/环境/依赖/通知设置 API 路由
-│   ├── services/              # 任务安全执行器、日志流处理、依赖包管理器、Telegram 通知推送
-│   └── static/                # 现代化 Web 控制台 (Vue 3 + Tailwind CSS SPA)
-│       └── favicon.svg        # 浏览器标签页图标
-├── scripts/                   # 用户定时 Python 脚本存放目录 (通过 Web 控制台在线编辑/上传/粘贴)
-│   ├── notify.py              # MiniCron 通用通知模块 (支持脚本内直接 from notify import send)
-│   └── .gitkeep
-├── data/                      # 运行时持久化数据 (Git 忽略)
-│   ├── minicron.db            # SQLite 数据库文件 (自动生成与迁移)
-│   └── logs/                  # 任务执行日志归档
-├── Dockerfile                 # 基于 Python 3.11-slim 的轻量生产镜像
-├── docker-compose.yml         # 容器化部署编排 (挂载 data / scripts / app)
-├── verify_minicron.py         # 端到端全链路自动化测试套件
-├── .gitignore
-├── CHANGELOG.md                # 规范发版与版本变更日志
-├── README.md
-└── requirements.txt           # Python 核心依赖清单 (含 requests, pysocks 等)
+├── app/                 # Web 控制台、API、调度和任务执行
+├── scripts/             # Python 任务脚本与内置 notify.py
+├── data/                # SQLite 数据库与运行日志
+├── docs/                # 使用指南、API、架构文档与截图
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── start.sh
 ```
 
----
+## 文档中心
 
-## 📖 文档中心
+- 任务、脚本、Cron 和通知配置：[使用指南](docs/help.md)
+- 功能范围与需求：[产品需求](docs/PRD.md)
+- 调度、执行与部署结构：[架构说明](docs/ARCHITECTURE.md)
+- 接口与响应格式：[API 参考](docs/API_SPEC.md)
 
-* 📘 **[配置与使用指南 (HELP & FAQ)](docs/help.md)**：**强烈推荐新手阅读**！包含脚本如何添加通知、Telegram Bot 获取、环境变量优先级、依赖安装与 Crontab 表达式速查表。
-* 📋 **[产品需求规格说明书 (PRD)](docs/PRD.md)**：包含业务背景、用户角色、详细功能清单（任务管理、调度执行、日志追踪）及非功能安全指标。
-* 🏛️ **[系统架构设计方案 (ARCHITECTURE)](docs/ARCHITECTURE.md)**：包含系统架构拓扑、任务状态机时序图、防注入安全沙箱原理及数据库 E-R 规范。
-* 🔌 **[RESTful API 规范文档 (API_SPEC)](docs/API_SPEC.md)**：详细定义所有前后端交互接口与请求响应数据结构。
-* 📜 **[版本变更日志 (CHANGELOG)](CHANGELOG.md)**：详细记录各版本的发布与功能演进历史。
+## 部署
 
----
-
-## 🚀 部署与运行方式
-
-### 方式一：Docker Compose 容器化部署 (推荐生产部署 🌟)
-无需在服务器上安装 Python 或任何虚拟环境，通过 Docker 直接运行：
+在仓库根目录的 `.env` 中设置 `ADMIN_PASSWORD`（至少 12 个字符）和 `SECRET_KEY`（至少 32 个字符）。首次部署可运行以下命令生成随机值。升级已有实例时，请确认 `.env` 中两项都已设置。
 
 ```bash
-# 1. 启动容器 (后台运行)
-docker compose up -d
-
-# 2. 查看实时运行日志
-docker compose logs -f
-
-# 3. 停止容器
-docker compose down
+if [ ! -e .env ]; then
+  (
+    set -e
+    umask 077
+    admin_password=$(openssl rand -hex 16)
+    secret_key=$(openssl rand -hex 32)
+    printf 'ADMIN_PASSWORD=%s\nSECRET_KEY=%s\n' "$admin_password" "$secret_key" > .env
+  )
+fi
 ```
 
-### 方式二：Docker 单容器运行
+### Docker Compose
+
 ```bash
-# 1. 构建镜像
+docker compose up -d --build
+```
+
+用 `docker compose logs -f` 查看服务日志，用 `docker compose down` 停止服务。
+
+### Docker 单容器
+
+```bash
 docker build -t minicron:latest .
-
-# 2. 启动容器 (挂载数据与脚本目录)
-docker run -d \
-  --name minicron \
-  --restart unless-stopped \
-  -p 8000:8000 \
-  -e ADMIN_PASSWORD="your_secure_password" \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/scripts:/app/scripts \
+docker run -d --name minicron --restart unless-stopped \
+  --env-file .env -p 8000:8000 \
+  -v "$PWD/data:/app/data" \
+  -v "$PWD/scripts:/app/scripts" \
   minicron:latest
 ```
 
-### 方式三：本地 Conda / Python 环境运行
-```bash
-# 激活本地环境
-source ~/.zshrc
-conda activate minicron
+### 本地 Python（3.11+）
 
-# 启动服务
-./start.sh
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m app.main
 ```
 
----
+也可以在已激活的 Conda 环境中安装依赖，然后运行 `python -m app.main`。
 
-## 🖥️ 访问可视化控制台
-浏览器打开：**`http://localhost:8000`**
-* **默认管理员密码**：`admin123`（支持在顶部「⚙️ 设置中心」->「修改管理密码」在线修改并持久化落库，亦可通过环境变量 `ADMIN_PASSWORD` 预设）。
-* **功能亮点**：
-  * 📋 **任务调度**：可视化 Crontab 表达式配置与未来 5 次触发时间预演，一键开启/暂停、手动立即运行。
-  * 📝 **脚本在线编辑**：支持在控制台直接在线编写、编辑、粘贴保存或上传 `.py` 脚本文件，内置 Tab 缩进与 `Ctrl+S` / `Cmd+S` 快捷保存。
-  * ⚙️ **一体化系统设置中心**：将通知与出海代理、全局环境变量、Python 依赖管理、修改密码全面收敛整合为现代化的侧边栏 Tab 控制台，彻底告别弹窗堆叠与顶栏拥挤。
-  * 🔔 **通知体系与系统安全告警（纯净通知 + 安全解耦）**：
-    * **任务通知（纯净直观）**：脚本调用 `notify.send()` 时直接推送纯净的标题+内容，无机器参数噪音；任务崩溃自动兜底告警；支持「仅脚本主动通知」、「仅失败」等灵活策略。
-    * **系统安全告警**：登录失败防暴破告警（带客户端 IP 溯源）、密码修改提醒、登录成功通知；支持配置独立安全 Chat ID 分流至管理员私聊。
-    * **国内网络穿透**：原生支持 HTTP/SOCKS5 代理及自定义反向代理 Base URL，提供双通道独立测试按钮。
-  * 📦 **第三方依赖管理**：在控制台直接管理 Python 模块包（`pip list` / `pip install` / `pip uninstall`），支持清华/阿里/腾讯国内镜像源与 SSE 终端实时流式回显；自定义模块入库持久化并在容器重启时自愈恢复；严密保护核心系统库防止误删。
-  * 🔍 **智能模块诊断**：执行任务报错 `ModuleNotFoundError` 时，日志窗口智能识别缺失包名并提示「一键在线安装」，零门槛解决环境缺失问题。
-  * 📜 **实时日志捕获与顶栏一键重跑**：Server-Sent Events (SSE) 终端流式广播与历史日志全量归档；日志弹窗顶栏支持一键立即运行与执行状态实时联动。
-  * 📖 **内置使用与配置指南**：控制台顶栏直接调出帮助指南，支持暗色 Markdown 渲染、目录锚点平滑跳转与示例代码一键复制，使用零门槛。
+## 访问控制台
 
----
+浏览器打开 [http://localhost:8000](http://localhost:8000)。新实例使用 `.env` 中的 `ADMIN_PASSWORD` 登录。已通过界面修改密码的实例继续使用保存的密码。更换 `SECRET_KEY` 后需要重新登录。
 
----
+部署后可登录控制台，确认任务列表能加载、Cron 能预演、历史日志能打开。Docker Compose 部署可用 `docker compose ps` 检查容器状态。
 
-## 🔔 Telegram 结果通知、系统安全告警与出海代理配置
+## Telegram 通知与代理
 
-如果您的服务器部署在中国大陆境内，由于网络原因无法直接访问 Telegram 官方 API (`api.telegram.org`)，MiniCron 提供开箱即用的多路穿透方案，并将**系统安全告警**与**日常任务通知**在通道与呈现上进行了彻底解耦：
+在「设置中心 → 通知与代理」填写 Telegram Bot Token 和任务 Chat ID。
 
-在控制台顶部点击 **「⚙️ 设置中心」** 并切换至 **「🔔 通知与代理」**：
+- **任务通知**支持仅脚本主动通知、仅失败、每次执行和关闭。脚本可用 `from notify import send`，再调用 `send(title, content)` 发送自定义消息。仅脚本主动通知模式下，普通成功任务保持静默，异常会触发兜底告警。
+- **安全通知**可为登录失败、登录成功和密码修改单独配置开关。安全 Chat ID 留空时使用任务 Chat ID。
+- **连接方式**支持直连、HTTP 或 SOCKS5 正向代理，以及自定义反向代理地址。用「测试任务通道」和「测试安全通道」分别验证连通性。
 
-### 1. 定时任务通知（纯净直观模式）
-* **Chat ID**：接收任务执行报告的用户、频道或群组 ID（可通过 [@userinfobot](https://t.me/userinfobot) 查询）。
-* **任务通知策略**：
-  * `仅脚本主动通知 (推荐)`：日常成功任务静默无打扰；脚本中调用 `notify.send()` 时立即推送纯净业务通知；若脚本异常崩溃或超时，系统自动兜底发送故障告警卡片。
-  * `仅失败时通知`：日常签到成功静默，仅在脚本异常（退出码非 0）或超时被杀时发送精简故障报告。
-  * `每次执行均通知`：无论成功失败均发送通知。
-  * `完全关闭任务通知`。
-* **纯净业务内容呈现（图 2 体验）**：
-  * 脚本中调用 `from notify import send; send(title, content)` 时，系统直接将标题与内容作为通知主体发送，文末附带轻量标注（`🕒 时间戳 · 任务名`），彻底剔除退出代码、耗时等所有机器参数噪音。
-  * 内置 `scripts/notify.py` 模块，零侵入、零修改。
+Bot Token、Chat ID 和通知策略的配置详见 [使用指南](docs/help.md)。
 
-### 2. 系统安全通知（独立告警通道）
-* **专属安全 Chat ID**：支持单独配置安全告警接收目标（如管理员个人私聊 ID），将敏感安全信息与任务群组彻底隔离；未填写时自动回退至上述任务 Chat ID。
-* **细分告警事件开关**：
-  * ⚠️ **登录失败告警**（默认开启）：密码验证错误时触发，自动记录并上报来源 IP 地址与时间，强力防范暴力破解。
-  * 🔐 **管理员密码修改**（默认开启）：密码变更后立即推送凭据已更新提醒。
-  * 🔑 **登录成功提醒**（默认关闭）：自用频繁可关闭，避免打扰；需要时可一键开启。
+## 安全部署
 
-### 3. 国内服务器网络穿透配置（二选一即可）
-* **方案 A：正向代理 (HTTP / SOCKS5)**
-  * 若服务器本地或内网运行有代理客户端（如 Clash / v2ray / xray），填入代理地址：
-    * HTTP 代理：`http://127.0.0.1:7890`
-    * SOCKS5 代理：`socks5://127.0.0.1:1080` 或 `socks5h://...`
-* **方案 B：反向代理 Base URL (无需本地代理软件)**
-  * 若没有代理客户端，可使用 Cloudflare Workers 或海外 VPS 反向代理 `api.telegram.org`，在「反向代理 Base URL」中填入反代地址，例如：
-    * `https://tg-proxy.yourdomain.com`
+- 将 `.env`、运行数据和私人脚本保存在部署环境中。为每个实例设置独立的签名密钥。
+- 仅需内网访问时，可使用私有网络。通过公网访问时，将应用端口绑定到 `127.0.0.1`，由反向代理提供 HTTPS。
 
-### 4. 🧪 双通道独立连通性测试
-* 点击 **「🧪 测试任务通道」**：即时验证任务群组/频道的推送连通性。
-* 点击 **「🛡️ 测试安全通道」**：即时验证管理员专属私聊的安全告警连通性。
-* 秒级反馈连接状态与详细排错信息。
+## 版本历史
 
----
+- **v2.0.0** · 显式配置部署凭据，修复会话刷新、Cron 调度、重复执行和超时处理。
+- **v1.2.0** · 内置帮助、日志窗口快捷重跑，以及 SSE 日志和 Docker 构建改进。
+- **v1.1.0** · 独立安全告警、脚本自定义通知和双通道测试。
+- **v1.0.0** · 首个正式版本。
 
-### 🧪 运行自动化测试套件
-```bash
-python verify_minicron.py
-```
-
----
-
-## 🔒 安全最佳实践
-1. **推荐反代**：在公网部署时，建议监听 `127.0.0.1:8000`，外网通过 Nginx 配置 HTTPS 证书并反向代理。
-2. **私有网络**：推荐结合 Tailscale、WireGuard 等私有组网工具访问控制台，不对公网开放 Web 端口。
-
----
-
-## 📜 发版与更新历史
-详细版本变更历史请参阅 **[CHANGELOG.md](CHANGELOG.md)**。
-* **[v1.2.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.2.0)**：内置帮助指南与快捷重跑、SSE 日志稳定性修复、控制台交互与 Docker 构建优化，并新增产品界面预览与浏览器图标。
-* **[v1.1.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.1.0)**：系统安全告警拆分、纯净直观自定义通知、双通道独立测试。
-* **[v1.0.0](https://github.com/ddmasato1/MiniCron/releases/tag/v1.0.0)**：MiniCron 首个正式版本发布。
+完整记录见 [更新日志](CHANGELOG.md)。

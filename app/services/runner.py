@@ -2,10 +2,8 @@ import asyncio
 import os
 import sys
 import uuid
-import time
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Optional, Set, AsyncGenerator
 from app.core.config import settings
 from app.core.security import validate_script_path
@@ -68,26 +66,45 @@ class TaskRunner:
             print(f"[TaskRunner] 任务 ID={task_id} 正在运行中，跳过本次触发")
             return None
 
-        # 从数据库加载任务配置
-        async with get_db() as db:
-            cursor = await db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
-            task = await cursor.fetchone()
-            if not task:
-                print(f"[TaskRunner] 任务 ID={task_id} 不存在")
-                return None
-
-        execution_id = str(uuid.uuid4())
         self._running_tasks.add(task_id)
+        execution = None
+        try:
+            async with get_db() as db:
+                cursor = await db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+                task = await cursor.fetchone()
+                if task is None:
+                    print(f"[TaskRunner] 任务 ID={task_id} 不存在")
+                    return None
 
-        # 异步启动后台执行协程，不阻塞当前调度循环
-        asyncio.create_task(self._execute_subprocess(execution_id, dict(task), trigger_type))
-        return execution_id
+                execution_id = str(uuid.uuid4())
+                start_time = datetime.now()
+                log_filename = f"{task_id}_{execution_id}.log"
+                await db.execute(
+                    """
+                    INSERT INTO task_executions
+                    (id, task_id, trigger_type, status, start_time, log_path)
+                    VALUES (?, ?, ?, 'RUNNING', ?, ?)
+                    """,
+                    (execution_id, task_id, trigger_type, start_time.isoformat(), log_filename)
+                )
+                await db.commit()
+
+            execution = asyncio.create_task(
+                self._execute_subprocess(execution_id, dict(task), trigger_type, start_time, log_filename)
+            )
+            execution.add_done_callback(lambda _: self._running_tasks.discard(task_id))
+            return execution_id
+        finally:
+            if execution is None:
+                self._running_tasks.discard(task_id)
 
     async def _execute_subprocess(
         self,
         execution_id: str,
         task: dict,
-        trigger_type: str
+        trigger_type: str,
+        start_time: datetime,
+        log_filename: str,
     ):
         task_id = task["id"]
         script_rel_path = task["script_path"]
@@ -98,22 +115,8 @@ class TaskRunner:
         except Exception:
             env_vars = {}
 
-        log_filename = f"{task_id}_{execution_id}.log"
         log_abs_path = settings.LOGS_DIR / log_filename
-        start_time = datetime.now()
         start_iso = start_time.isoformat()
-
-        # 写入初始执行中记录
-        async with get_db() as db:
-            await db.execute(
-                """
-                INSERT INTO task_executions 
-                (id, task_id, trigger_type, status, start_time, log_path)
-                VALUES (?, ?, ?, 'RUNNING', ?, ?)
-                """,
-                (execution_id, task_id, trigger_type, start_iso, log_filename)
-            )
-            await db.commit()
 
         # 加载已启用的全局环境变量
         global_env_dict = {}
@@ -128,6 +131,7 @@ class TaskRunner:
 
         status = "FAILED"
         exit_code = -1
+        process = None
 
         try:
             # 1. 严格安全沙箱路径校验
@@ -163,7 +167,7 @@ class TaskRunner:
                 log_file.write(header)
                 await self._broadcast_log(execution_id, header)
 
-                async def read_stream():
+                async def wait_for_completion():
                     while True:
                         line_bytes = await process.stdout.readline()
                         if not line_bytes:
@@ -171,11 +175,10 @@ class TaskRunner:
                         line = line_bytes.decode("utf-8", errors="replace")
                         log_file.write(line)
                         await self._broadcast_log(execution_id, line)
+                    return await process.wait()
 
                 try:
-                    await asyncio.wait_for(read_stream(), timeout=timeout_seconds)
-                    await process.wait()
-                    exit_code = process.returncode
+                    exit_code = await asyncio.wait_for(wait_for_completion(), timeout=timeout_seconds)
                     status = "SUCCESS" if exit_code == 0 else "FAILED"
                 except asyncio.TimeoutError:
                     status = "TIMEOUT"
@@ -183,10 +186,6 @@ class TaskRunner:
                     timeout_msg = f"\n\n!!! [MiniCron] 任务运行超时 (超过设定限制 {timeout_seconds} 秒)，已强制终止子进程 !!!\n"
                     log_file.write(timeout_msg)
                     await self._broadcast_log(execution_id, timeout_msg)
-                    try:
-                        process.kill()
-                    except Exception:
-                        pass
 
                 footer = f"\n=== [MiniCron] 任务执行结束，状态: {status}，退出码: {exit_code} ===\n"
                 log_file.write(footer)
@@ -201,6 +200,13 @@ class TaskRunner:
             await self._broadcast_log(execution_id, error_msg)
 
         finally:
+            if process is not None and process.returncode is None:
+                try:
+                    process.kill()
+                    await asyncio.wait_for(process.wait(), timeout=1)
+                except (ProcessLookupError, asyncio.TimeoutError):
+                    pass
+
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
@@ -219,8 +225,6 @@ class TaskRunner:
             except Exception as e:
                 print(f"[TaskRunner] 更新执行状态到数据库失败: {e}")
 
-            # 清理运行状态并关闭实时日志流
-            self._running_tasks.discard(task_id)
             await self._close_log_stream(execution_id)
 
             # 异步触发结果通知 (不阻塞主流程)

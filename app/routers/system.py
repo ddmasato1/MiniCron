@@ -1,9 +1,7 @@
-import os
 import sys
 import resource
 import time
 from datetime import datetime
-from pathlib import Path
 from fastapi import APIRouter, Depends
 from app.core.config import settings
 from app.core.security import get_current_admin
@@ -45,27 +43,12 @@ async def get_system_status():
 
 @router.get("/help", response_model=ApiResponse)
 async def get_system_help():
-    """获取系统使用与配置指南 Markdown 内容 (支持自适应多路径检索)"""
-    candidate_paths = [
-        settings.BASE_DIR / "docs" / "help.md",
-        settings.BASE_DIR / "app" / "static" / "help.md",
-        Path(__file__).resolve().parent.parent / "static" / "help.md",
-        Path("docs/help.md"),
-        Path("/app/docs/help.md"),
-        Path("/app/app/static/help.md")
-    ]
-    
-    help_file = None
-    for p in candidate_paths:
-        if p.is_file():
-            help_file = p
-            break
-
-    if not help_file:
-        return ApiResponse(code=404, message="帮助文档不存在", data={"content": "# 帮助文档未找到\n\n请确认 docs/help.md 或 app/static/help.md 文件是否存在。"})
-    
+    """读取仓库与容器共用的使用指南。"""
+    help_file = settings.BASE_DIR / "docs" / "help.md"
     try:
-        content = help_file.read_text(encoding="utf-8", errors="replace")
-        return ApiResponse(data={"content": content})
-    except Exception as e:
-        return ApiResponse(code=500, message=f"读取帮助文档失败: {e}", data={"content": f"读取失败: {e}"})
+        content = help_file.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ApiResponse(code=404, message="帮助文档 docs/help.md 不存在")
+    except (OSError, UnicodeError):
+        return ApiResponse(code=500, message="读取帮助文档失败")
+    return ApiResponse(data={"content": content})

@@ -38,7 +38,7 @@
     "code": 0,
     "message": "登录成功",
     "data": {
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "token": "<会话令牌>",
       "expires_in": 604800
     }
   }

@@ -1,13 +1,30 @@
 import logging
 from typing import Optional, List
-from datetime import datetime
-from croniter import croniter
+from datetime import datetime, timedelta
+from croniter import CroniterBadDateError, croniter
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.base import BaseTrigger
 from app.services.runner import task_runner
 from app.models.db import get_db
 
 logger = logging.getLogger("minicron.scheduler")
+
+class CrontabTrigger(BaseTrigger):
+    """让调度器和预演共用 Linux Crontab 的解析规则。"""
+
+    def __init__(self, expression: str):
+        if len(expression.split()) != 5 or not croniter.is_valid(expression):
+            raise ValueError("非法的 Crontab 表达式，请遵循标准 Linux 5 字段格式 (分 时 日 月 周)")
+        self.expression = expression
+
+    def get_next_fire_time(self, previous_fire_time, now):
+        # 首次注册时包含恰好命中的当前分钟，后续从上一次触发时间之后继续计算。
+        start = previous_fire_time if previous_fire_time is not None else now - timedelta(microseconds=1)
+        try:
+            return croniter(self.expression, start).get_next(datetime)
+        except CroniterBadDateError:
+            return None
+
 
 class SchedulerManager:
     def __init__(self):
@@ -43,22 +60,11 @@ class SchedulerManager:
 
         count = 0
         for task in tasks:
-            task_id = task["id"]
-            cron_expr = task["cron_expression"]
             try:
-                trigger = CronTrigger.from_crontab(cron_expr)
-                self.scheduler.add_job(
-                    func=task_runner.run_task,
-                    trigger=trigger,
-                    id=f"task_{task_id}",
-                    args=[task_id, "CRON"],
-                    replace_existing=True,
-                    max_instances=1,
-                    coalesce=True
-                )
+                self.add_or_update_job(task["id"], task["cron_expression"], True)
                 count += 1
             except Exception as e:
-                logger.error(f"[Scheduler] 注册任务 ID={task_id} 定时失败: {e}")
+                logger.error(f"[Scheduler] 注册任务 ID={task['id']} 定时失败: {e}")
 
         logger.info(f"[Scheduler] 成功从数据库注册 {count} 个定时任务")
 
@@ -71,7 +77,7 @@ class SchedulerManager:
             return
 
         try:
-            trigger = CronTrigger.from_crontab(cron_expr)
+            trigger = CrontabTrigger(cron_expr)
             self.scheduler.add_job(
                 func=task_runner.run_task,
                 trigger=trigger,
@@ -99,18 +105,17 @@ class SchedulerManager:
             return job.next_run_time.strftime("%Y-%m-%d %H:%M:%S")
         return None
 
-    @staticmethod
-    def preview_cron(cron_expr: str, count: int = 5) -> List[str]:
+    def preview_cron(self, cron_expr: str, count: int = 5) -> List[str]:
         """解析 Cron 表达式并预演未来 N 次执行时间点"""
-        if not croniter.is_valid(cron_expr):
-            raise ValueError("非法的 Crontab 表达式，请遵循标准 Linux 5 字段格式 (分 时 日 月 周)")
-        
-        now = datetime.now()
-        iter_obj = croniter(cron_expr, now)
+        trigger = CrontabTrigger(cron_expr)
+        now = datetime.now(self.scheduler.timezone)
+        previous = now
         results = []
         for _ in range(count):
-            next_dt = iter_obj.get_next(datetime)
-            results.append(next_dt.strftime("%Y-%m-%d %H:%M:%S"))
+            previous = trigger.get_next_fire_time(previous, now)
+            if previous is None:
+                raise ValueError("找不到符合该 Crontab 表达式的触发时间")
+            results.append(previous.strftime("%Y-%m-%d %H:%M:%S"))
         return results
 
 # 全局单例调度管理器

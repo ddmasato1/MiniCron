@@ -42,8 +42,8 @@ async def verify_admin_password(password: str) -> bool:
                 return verify_password(password, row["value"])
     except Exception:
         pass
-    # 未设置或数据库无记录时，兼容默认/环境变量密码
-    return hmac.compare_digest(password, settings.ADMIN_PASSWORD)
+    # 首次部署尚未设置持久化密码时使用部署密码。
+    return hmac.compare_digest(password.encode(), settings.ADMIN_PASSWORD.get_secret_value().encode())
 
 async def set_admin_password(new_password: str) -> None:
     """更新管理员密码并持久化至 SQLite"""
@@ -67,7 +67,7 @@ def create_admin_token() -> str:
     timestamp = str(int(time.time()))
     payload = f"admin:{timestamp}"
     signature = hmac.new(
-        settings.SECRET_KEY.encode(),
+        settings.SECRET_KEY.get_secret_value().encode(),
         payload.encode(),
         hashlib.sha256
     ).hexdigest()
@@ -89,7 +89,7 @@ def verify_token(token: str) -> bool:
         
         expected_payload = f"admin:{timestamp_str}"
         expected_sig = hmac.new(
-            settings.SECRET_KEY.encode(),
+            settings.SECRET_KEY.get_secret_value().encode(),
             expected_payload.encode(),
             hashlib.sha256
         ).hexdigest()
